@@ -1,9 +1,12 @@
 # cdr
 
-**C**lient **D**ata **R**ecorder — 사용자 기기에 진단 로그를 보존하고(IndexedDB),
-필요 시 사용자가 `/log`에서 직접 내보내는 **pull 모델** 클라이언트 로거. 병원 내부망처럼 outbound가
-막힌 환경에서도 동작하며, 기존 로깅 라이브러리(pino · loglevel · consola)에
-**기존 console 출력을 건드리지 않고** 얹는다.
+**C**lient **D**ata **R**ecorder — 웹 앱의 **블랙박스**. 비행기 FDR·차량 EDR처럼
+평소엔 기기 안에 조용히 쌓다가(IndexedDB), 문제가 생기면 사용자가 `/log`에서
+꺼내 본다. 단, 값은 빼고 _형태만_ 남기는 **프라이버시-퍼스트 블랙박스**다.
+
+병원 내부망처럼 outbound가 막힌 환경에서도 동작하는 **pull 모델** 로거이며,
+기존 로깅 라이브러리(pino · loglevel · consola)에 **기존 console 출력을 건드리지
+않고** 얹는다.
 
 - 의존성 없는 순수 IndexedDB sink (pull)
 - 쓰기 시점 스크러버로 PHI·토큰 마스킹
@@ -166,21 +169,3 @@ vp dev        # 데모 실행 (http://localhost:5173)
   일반 로그, 그리고 민감 데이터 로깅을 버튼으로 발생시킨다.
 - **`/log` 뷰어** — IndexedDB에서 read → 레벨/텍스트 필터 → NDJSON 다운로드 ·
   txt 복사 · clear. 민감 데이터 로그가 `‹masked›`/`‹number›`로 저장된 걸 확인할 수 있다.
-
-### 소스 구조
-
-```
-src/
-  index.ts          # public API + setupDiagLogger
-  logger.ts         # DiagLogger (배치 버퍼 · 라이프사이클 flush)
-  scrub.ts          # 쓰기 시점 스크러버
-  export.ts         # filter / ndjson / txt / download / copy
-  types.ts          # DiagEvent · LogRecord · Sink
-  sinks/            # idb (pull) · console (dev)
-  adapters/         # pino · loglevel · consola (non-destructive)
-demo/               # vanilla TS 데모 (vp dev)
-```
-
-## 라이선스
-
-MIT
