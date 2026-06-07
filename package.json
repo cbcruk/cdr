@@ -1,0 +1,68 @@
+{
+  "name": "diaglog",
+  "version": "0.1.0",
+  "description": "Pull-model client logger that persists diagnostic logs on-device (IndexedDB) and lets users export them from /log. Works behind locked-down networks.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build"
+  },
+  "keywords": [
+    "logger",
+    "logging",
+    "indexeddb",
+    "diagnostics",
+    "pull-model",
+    "pino",
+    "loglevel",
+    "consola"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "consola": "^3",
+    "loglevel": "^1",
+    "pino": "^9"
+  },
+  "peerDependenciesMeta": {
+    "consola": {
+      "optional": true
+    },
+    "loglevel": {
+      "optional": true
+    },
+    "pino": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^25.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
