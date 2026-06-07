@@ -5,6 +5,12 @@
 막힌 환경에서도 동작하며, 기존 로깅 라이브러리(pino · loglevel · consola)에
 **기존 console 출력을 건드리지 않고** 얹는다.
 
+- 의존성 없는 순수 IndexedDB sink (pull)
+- 쓰기 시점 스크러버로 PHI·토큰 마스킹
+- 배치 flush + count 기반 rotation
+- pino · loglevel · consola 어댑터 (non-destructive)
+- ESM · TypeScript 타입 포함
+
 ## 왜 pull 모델인가
 
 Sentry/OpenReplay 같은 도구는 전부 **push**다 — 클라이언트가 outbound로
@@ -20,10 +26,22 @@ DiagEvent ──→ [scrub] ──→ ┬─→ IdbSink      (pull: /log, 망 �
 
 같은 로거에 sink만 갈아끼우면 push/pull 둘 다 된다.
 
+## 설치
+
+```bash
+pnpm add diaglog
+```
+
+어댑터를 쓸 때만 해당 패키지를 추가하면 된다 (optional peerDependencies):
+
+```bash
+pnpm add pino      # 또는 loglevel, consola
+```
+
 ## 빠른 시작
 
 ```ts
-import { setupDiagLogger } from "./diaglog/src";
+import { setupDiagLogger } from "diaglog";
 
 export const { diag, idbSink } = setupDiagLogger({
   release: import.meta.env.VITE_BUILD_ID,
@@ -31,6 +49,10 @@ export const { diag, idbSink } = setupDiagLogger({
   dev: import.meta.env.DEV, // dev면 console에도 출력
 });
 ```
+
+`setupDiagLogger`는 흔한 구성(prod: IndexedDB만, dev: + console)을 한 번에
+세우는 편의 팩토리다. 더 세밀하게 제어하려면 `DiagLogger`를 직접 생성하고
+`sinks`를 조립한다.
 
 ## 핵심: "침묵하는 제3의 상태"를 기록
 
@@ -51,6 +73,9 @@ function handleSubmit() {
 
 `data`는 저장 전 scrubber를 거치므로, 필드 *경로*는 남고 *값*은 남지 않는다.
 
+의미별 헬퍼: `diag.validationBlocked(fields)` · `diag.schemaMismatch(schema, paths)`
+· `diag.swallowed(where, err)`. 임의 이벤트는 `diag.log({ type, level, message, data })`.
+
 ## 기존 로거와 연동 (non-destructive)
 
 세 어댑터 모두 원본 console 출력은 유지하고 sink에 **한 부 더** 복사한다.
@@ -59,7 +84,7 @@ function handleSubmit() {
 
 ```ts
 import pino from "pino";
-import { pinoTransmit } from "./diaglog/src";
+import { pinoTransmit } from "diaglog";
 
 const logger = pino({
   browser: { transmit: pinoTransmit(diag, "info") }, // warn 이상만 보존하려면 "warn"
@@ -72,7 +97,7 @@ const logger = pino({
 
 ```ts
 import log from "loglevel";
-import { attachLoglevel } from "./diaglog/src";
+import { attachLoglevel } from "diaglog";
 
 attachLoglevel(log, diag); // methodFactory를 래핑 후 rebuild
 ```
@@ -81,7 +106,7 @@ attachLoglevel(log, diag); // methodFactory를 래핑 후 rebuild
 
 ```ts
 import { consola } from "consola";
-import { consolaReporter } from "./diaglog/src";
+import { consolaReporter } from "diaglog";
 
 consola.addReporter(consolaReporter(diag)); // 기본 reporter 유지한 채 추가
 ```
@@ -92,7 +117,7 @@ consola.addReporter(consolaReporter(diag)); // 기본 reporter 유지한 채 추
 "F12 → 우클릭 → Save as HAR" 대신 "`/log` 가서 내보내기" 한 줄.
 
 ```ts
-import { filterLogs, downloadLogs, copyLogs } from "./diaglog/src";
+import { filterLogs, downloadLogs, copyLogs } from "diaglog";
 
 const records = await idbSink.read(2000); // 최신순
 const filtered = filterLogs(records, { levels: ["warn", "error"] });
@@ -142,7 +167,7 @@ vp dev        # 데모 실행 (http://localhost:5173)
 - **`/log` 뷰어** — IndexedDB에서 read → 레벨/텍스트 필터 → NDJSON 다운로드 ·
   txt 복사 · clear. 민감 데이터 로그가 `‹masked›`/`‹number›`로 저장된 걸 확인할 수 있다.
 
-소스 구조:
+### 소스 구조
 
 ```
 src/
@@ -156,5 +181,6 @@ src/
 demo/               # vanilla TS 데모 (vp dev)
 ```
 
-`pino`·`loglevel`·`consola`는 optional peerDependencies다. 쓰는 어댑터의
-패키지만 설치하면 된다.
+## 라이선스
+
+MIT
