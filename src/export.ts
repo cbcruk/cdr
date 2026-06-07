@@ -24,8 +24,7 @@ export function filterLogs(records: LogRecord[], f: LogFilter = {}): LogRecord[]
     if (f.types && !f.types.includes(r.type)) return false;
     if (f.since && r.ts < f.since) return false;
     if (f.until && r.ts > f.until) return false;
-    if (f.text && !r.message.toLowerCase().includes(f.text.toLowerCase()))
-      return false;
+    if (f.text && !r.message.toLowerCase().includes(f.text.toLowerCase())) return false;
     return true;
   });
 }
@@ -47,10 +46,7 @@ export function toPlainText(records: LogRecord[]): string {
 }
 
 /** 파일 다운로드 트리거. */
-export function downloadLogs(
-  records: LogRecord[],
-  format: "ndjson" | "txt" = "ndjson",
-): void {
+export function downloadLogs(records: LogRecord[], format: "ndjson" | "txt" = "ndjson"): void {
   const content = format === "ndjson" ? toNdjson(records) : toPlainText(records);
   const blob = new Blob([content], {
     type: format === "ndjson" ? "application/x-ndjson" : "text/plain",

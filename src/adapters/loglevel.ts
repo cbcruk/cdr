@@ -14,10 +14,7 @@ import type { LogLevel } from "../types";
  *
  * @param log loglevel 루트 로거 또는 getLogger()로 만든 자식 로거
  */
-export function attachLoglevel(
-  log: LoglevelLogger,
-  diag: DiagLogger,
-): () => void {
+export function attachLoglevel(log: LoglevelLogger, diag: DiagLogger): () => void {
   const original = log.methodFactory;
 
   log.methodFactory = (methodName, logLevel, loggerName) => {

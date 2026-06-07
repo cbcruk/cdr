@@ -6,9 +6,7 @@ export class ConsoleSink implements Sink {
   write(records: LogRecord[]): void {
     for (const r of records) {
       const fn =
-        r.level === "error" ? console.error
-        : r.level === "warn" ? console.warn
-        : console.log;
+        r.level === "error" ? console.error : r.level === "warn" ? console.warn : console.log;
       fn(`[diag:${r.type}]`, r.message, r.data);
     }
   }

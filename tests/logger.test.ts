@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import { DiagLogger } from "../src/logger";
 import type { LogRecord, Sink } from "../src/types";
 

@@ -27,7 +27,7 @@ import { setupDiagLogger } from "./diaglog/src";
 
 export const { diag, idbSink } = setupDiagLogger({
   release: import.meta.env.VITE_BUILD_ID,
-  maxRecords: 5000,         // 이 개수 넘으면 오래된 것부터 삭제
+  maxRecords: 5000, // 이 개수 넘으면 오래된 것부터 삭제
   dev: import.meta.env.DEV, // dev면 console에도 출력
 });
 ```
@@ -94,12 +94,12 @@ consola.addReporter(consolaReporter(diag)); // 기본 reporter 유지한 채 추
 ```ts
 import { filterLogs, downloadLogs, copyLogs } from "./diaglog/src";
 
-const records = await idbSink.read(2000);          // 최신순
+const records = await idbSink.read(2000); // 최신순
 const filtered = filterLogs(records, { levels: ["warn", "error"] });
 
 downloadLogs(filtered, "ndjson"); // 파일로
-await copyLogs(filtered, "txt");  // 클립보드로 (메신저 붙여넣기용)
-await idbSink.clear();            // 사용자가 직접 비우기
+await copyLogs(filtered, "txt"); // 클립보드로 (메신저 붙여넣기용)
+await idbSink.clear(); // 사용자가 직접 비우기
 ```
 
 ## 설계 노트
@@ -121,11 +121,14 @@ await idbSink.clear();            // 사용자가 직접 비우기
 
 ## 개발
 
+[Vite+](https://viteplus.dev) 통합 툴체인을 쓴다. `vp` CLI 설치:
+`curl -fsSL https://vite.plus | bash`
+
 ```bash
-pnpm install
-pnpm test         # vitest (jsdom + fake-indexeddb)
-pnpm typecheck    # tsc --noEmit
-pnpm build        # tsup → dist/ (esm + d.ts)
+vp install
+vp test       # jsdom + fake-indexeddb
+vp check      # oxfmt + oxlint + type check
+vp pack       # 라이브러리 빌드 → dist/ (esm + d.ts)
 ```
 
 소스 구조:

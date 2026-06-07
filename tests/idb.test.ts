@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { IdbSink } from "../src/sinks/idb";
 import type { LogRecord } from "../src/types";
 
@@ -35,11 +35,7 @@ describe("IdbSink", () => {
 
   it("respects the read limit", async () => {
     const sink = freshSink();
-    await sink.write([
-      makeRecord("a", 1),
-      makeRecord("b", 2),
-      makeRecord("c", 3),
-    ]);
+    await sink.write([makeRecord("a", 1), makeRecord("b", 2), makeRecord("c", 3)]);
 
     const out = await sink.read(2);
     expect(out).toHaveLength(2);

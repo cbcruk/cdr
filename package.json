@@ -2,40 +2,49 @@
   "name": "diaglog",
   "version": "0.1.0",
   "description": "Pull-model client logger that persists diagnostic logs on-device (IndexedDB) and lets users export them from /log. Works behind locked-down networks.",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
+  "keywords": [
+    "consola",
+    "diagnostics",
+    "indexeddb",
+    "logger",
+    "logging",
+    "loglevel",
+    "pino",
+    "pull-model"
+  ],
+  "license": "MIT",
   "files": [
     "dist",
     "README.md"
   ],
+  "type": "module",
   "sideEffects": false,
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prepublishOnly": "pnpm run build"
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
   },
-  "keywords": [
-    "logger",
-    "logging",
-    "indexeddb",
-    "diagnostics",
-    "pull-model",
-    "pino",
-    "loglevel",
-    "consola"
-  ],
-  "license": "MIT",
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "check": "vp check",
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run",
+    "test:watch": "vp test",
+    "prepublishOnly": "vp pack"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.2",
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vite-plus": "latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+  },
   "peerDependencies": {
     "consola": "^3",
     "loglevel": "^1",
@@ -52,17 +61,24 @@
       "optional": true
     }
   },
-  "devDependencies": {
-    "fake-indexeddb": "^6.0.0",
-    "jsdom": "^25.0.1",
-    "tsup": "^8.3.5",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
-  },
   "packageManager": "pnpm@9.15.0",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+      "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+    },
+    "peerDependencyRules": {
+      "allowAny": [
+        "vite",
+        "vitest"
+      ],
+      "allowedVersions": {
+        "vite": "*",
+        "vitest": "*"
+      }
+    }
   }
 }

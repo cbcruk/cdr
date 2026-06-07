@@ -1,10 +1,4 @@
-import type {
-  BaseContext,
-  DiagEvent,
-  LogLevel,
-  LogRecord,
-  Sink,
-} from "./types";
+import type { BaseContext, DiagEvent, LogLevel, LogRecord, Sink } from "./types";
 import { makeScrubber, type ScrubOptions, type Scrubber } from "./scrub";
 
 export interface LoggerOptions {
@@ -123,7 +117,7 @@ export class DiagLogger {
     this.listenersBound = true;
     const onExit = () => {
       void this.flush();
-      void Promise.all(this.sinks.map((s) => s.flush?.()));
+      void Promise.all(this.sinks.map((s) => Promise.resolve(s.flush?.())));
     };
     addEventListener("pagehide", onExit);
     addEventListener("visibilitychange", () => {
