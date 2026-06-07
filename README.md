@@ -1,7 +1,7 @@
 # cdr
 
-사용자 기기에 진단 로그를 보존하고(IndexedDB), 필요 시 사용자가 `/log`에서
-직접 내보내는 **pull 모델** 클라이언트 로거. 병원 내부망처럼 outbound가
+**C**lient **D**ata **R**ecorder — 사용자 기기에 진단 로그를 보존하고(IndexedDB),
+필요 시 사용자가 `/log`에서 직접 내보내는 **pull 모델** 클라이언트 로거. 병원 내부망처럼 outbound가
 막힌 환경에서도 동작하며, 기존 로깅 라이브러리(pino · loglevel · consola)에
 **기존 console 출력을 건드리지 않고** 얹는다.
 
