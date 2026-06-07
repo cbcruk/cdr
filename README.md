@@ -129,7 +129,18 @@ vp install
 vp test       # jsdom + fake-indexeddb
 vp check      # oxfmt + oxlint + type check
 vp pack       # 라이브러리 빌드 → dist/ (esm + d.ts)
+vp dev        # 데모 실행 (http://localhost:5173)
 ```
+
+### 데모
+
+`vp dev`로 [demo/](demo/)를 띄우면 pull 모델을 직접 만져볼 수 있다. 한 페이지에
+두 탭:
+
+- **이벤트 생성** — 폼 검증 실패(`validationBlocked`), 스키마 불일치, 삼킨 예외,
+  일반 로그, 그리고 민감 데이터 로깅을 버튼으로 발생시킨다.
+- **`/log` 뷰어** — IndexedDB에서 read → 레벨/텍스트 필터 → NDJSON 다운로드 ·
+  txt 복사 · clear. 민감 데이터 로그가 `‹masked›`/`‹number›`로 저장된 걸 확인할 수 있다.
 
 소스 구조:
 
@@ -142,6 +153,7 @@ src/
   types.ts          # DiagEvent · LogRecord · Sink
   sinks/            # idb (pull) · console (dev)
   adapters/         # pino · loglevel · consola (non-destructive)
+demo/               # vanilla TS 데모 (vp dev)
 ```
 
 `pino`·`loglevel`·`consola`는 optional peerDependencies다. 쓰는 어댑터의

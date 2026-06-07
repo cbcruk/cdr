@@ -30,7 +30,9 @@
   },
   "scripts": {
     "build": "vp pack",
-    "dev": "vp pack --watch",
+    "watch": "vp pack --watch",
+    "demo": "vp dev",
+    "demo:build": "vp build",
     "check": "vp check",
     "typecheck": "tsc --noEmit",
     "test": "vp test run",
