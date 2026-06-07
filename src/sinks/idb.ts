@@ -25,7 +25,7 @@ export class IdbSink implements Sink {
   private dbPromise: Promise<IDBDatabase> | null = null;
 
   constructor(opts: IdbSinkOptions = {}) {
-    this.dbName = opts.dbName ?? "diaglog";
+    this.dbName = opts.dbName ?? "cdr";
     this.storeName = opts.storeName ?? "logs";
     this.maxRecords = opts.maxRecords ?? 5000;
   }

@@ -19,7 +19,7 @@ function render(): void {
   const app = $("#app");
   app.innerHTML = `
     <header>
-      <h1>diaglog</h1>
+      <h1>cdr</h1>
       <p>기기에 쌓고(IndexedDB), <code>/log</code>에서 직접 내보내는 pull 모델 로거. 아래에서 이벤트를 만들고 뷰어에서 확인·내보내세요.</p>
     </header>
 

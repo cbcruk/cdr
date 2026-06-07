@@ -17,7 +17,7 @@ function makeRecord(message: string, ts: number): LogRecord {
 let dbCounter = 0;
 function freshSink(opts: { maxRecords?: number } = {}): IdbSink {
   dbCounter += 1;
-  return new IdbSink({ dbName: `diaglog-test-${dbCounter}`, ...opts });
+  return new IdbSink({ dbName: `cdr-test-${dbCounter}`, ...opts });
 }
 
 describe("IdbSink", () => {

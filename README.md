@@ -1,4 +1,4 @@
-# diaglog
+# cdr
 
 사용자 기기에 진단 로그를 보존하고(IndexedDB), 필요 시 사용자가 `/log`에서
 직접 내보내는 **pull 모델** 클라이언트 로거. 병원 내부망처럼 outbound가
@@ -15,7 +15,7 @@
 
 Sentry/OpenReplay 같은 도구는 전부 **push**다 — 클라이언트가 outbound로
 텔레메트리를 쏴야 작동한다. 내부망이 그 outbound를 막으면 무력화된다.
-diaglog는 기기 안에 쌓다가 사용자가 열어보거나 내보낸다. 망 정책과 무관하다.
+cdr는 기기 안에 쌓다가 사용자가 열어보거나 내보낸다. 망 정책과 무관하다.
 그리고 데이터·통제권이 사용자에게 있다.
 
 ```
@@ -29,7 +29,7 @@ DiagEvent ──→ [scrub] ──→ ┬─→ IdbSink      (pull: /log, 망 �
 ## 설치
 
 ```bash
-pnpm add diaglog
+pnpm add cdr
 ```
 
 어댑터를 쓸 때만 해당 패키지를 추가하면 된다 (optional peerDependencies):
@@ -41,7 +41,7 @@ pnpm add pino      # 또는 loglevel, consola
 ## 빠른 시작
 
 ```ts
-import { setupDiagLogger } from "diaglog";
+import { setupDiagLogger } from "cdr";
 
 export const { diag, idbSink } = setupDiagLogger({
   release: import.meta.env.VITE_BUILD_ID,
@@ -84,7 +84,7 @@ function handleSubmit() {
 
 ```ts
 import pino from "pino";
-import { pinoTransmit } from "diaglog";
+import { pinoTransmit } from "cdr";
 
 const logger = pino({
   browser: { transmit: pinoTransmit(diag, "info") }, // warn 이상만 보존하려면 "warn"
@@ -97,7 +97,7 @@ const logger = pino({
 
 ```ts
 import log from "loglevel";
-import { attachLoglevel } from "diaglog";
+import { attachLoglevel } from "cdr";
 
 attachLoglevel(log, diag); // methodFactory를 래핑 후 rebuild
 ```
@@ -106,7 +106,7 @@ attachLoglevel(log, diag); // methodFactory를 래핑 후 rebuild
 
 ```ts
 import { consola } from "consola";
-import { consolaReporter } from "diaglog";
+import { consolaReporter } from "cdr";
 
 consola.addReporter(consolaReporter(diag)); // 기본 reporter 유지한 채 추가
 ```
@@ -117,7 +117,7 @@ consola.addReporter(consolaReporter(diag)); // 기본 reporter 유지한 채 추
 "F12 → 우클릭 → Save as HAR" 대신 "`/log` 가서 내보내기" 한 줄.
 
 ```ts
-import { filterLogs, downloadLogs, copyLogs } from "diaglog";
+import { filterLogs, downloadLogs, copyLogs } from "cdr";
 
 const records = await idbSink.read(2000); // 최신순
 const filtered = filterLogs(records, { levels: ["warn", "error"] });

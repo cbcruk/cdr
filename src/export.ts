@@ -54,7 +54,7 @@ export function downloadLogs(records: LogRecord[], format: "ndjson" | "txt" = "n
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `diaglog-${new Date().toISOString().slice(0, 19)}.${format}`;
+  a.download = `cdr-${new Date().toISOString().slice(0, 19)}.${format}`;
   a.click();
   URL.revokeObjectURL(url);
 }

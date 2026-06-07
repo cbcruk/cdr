@@ -1,5 +1,5 @@
 {
-  "name": "diaglog",
+  "name": "cdr",
   "version": "0.1.0",
   "description": "Pull-model client logger that persists diagnostic logs on-device (IndexedDB) and lets users export them from /log. Works behind locked-down networks.",
   "keywords": [
