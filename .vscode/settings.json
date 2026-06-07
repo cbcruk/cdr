@@ -1,0 +1,22 @@
+{
+  "prettier.enable": false,
+  "editor.formatOnSave": false,
+  "[typescript]": {
+    "editor.defaultFormatter": null
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": null
+  },
+  "[json]": {
+    "editor.defaultFormatter": null
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": null
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": null
+  },
+  "[css]": {
+    "editor.defaultFormatter": null
+  }
+}
