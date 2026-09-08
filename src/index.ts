@@ -4,8 +4,8 @@
  *
  * 아무것도 전송하지 않으므로 outbound가 막힌 망에서도 동작한다. 앱은
  * {@linkcode DiagLogger}로 "침묵한 실패"를 기록하고, `/log` 같은 라우트에서
- * {@linkcode IdbSink.read}로 꺼내 {@linkcode downloadLogs}로 내보낸다.
- * 저장 직전 {@linkcode makeScrubber}가 값을 마스킹하므로 내보내도 원본은
+ * {@linkcode IdbSink.read}로 꺼내 `downloadLogs`로 내보낸다.
+ * 저장 직전 `makeScrubber`가 값을 마스킹하므로 내보내도 원본은
  * 나가지 않는다.
  *
  * @example 앱 시작 지점에서 한 번 세우기

@@ -54,8 +54,8 @@ function summarize(v: unknown): unknown {
  * 기본적으로 타입/형태로 축약한다.
  *
  * 병원 앱처럼 on-device여도 export로 결국 밖에 나갈 수 있으므로 저장 자체를
- * 안전하게 만든다. {@linkcode DiagLogger}는 이 함수를 내부에서 호출하므로,
- * 보통은 {@linkcode LoggerOptions.scrub}에 옵션만 넘기면 된다.
+ * 안전하게 만든다. `DiagLogger`는 이 함수를 내부에서 호출하므로, 보통은
+ * `LoggerOptions.scrub`에 옵션만 넘기면 된다.
  *
  * `Error`는 디버깅의 핵심이라 구조(`name`/`stack` 앞 8줄)를 보존하되
  * `message`는 `redactValues`가 켜져 있으면 지운다. 순환 참조와 `maxDepth`

@@ -41,7 +41,7 @@ function randomId(): string {
  * `flushIntervalMs`가 지나면 비우고, 탭이 숨겨지거나 종료될 때도 한 번 더
  * 비워 유실을 줄인다. sink가 던지는 예외는 삼켜서 로깅이 앱을 깨지 않게 한다.
  *
- * 흔한 구성은 {@linkcode setupDiagLogger}가 대신 세워 준다. 직접 생성하는 건
+ * 흔한 구성은 `setupDiagLogger`가 대신 세워 준다. 직접 생성하는 건
  * sink 조합이나 버퍼 정책을 손볼 때다.
  *
  * @example 직접 조립

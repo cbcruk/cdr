@@ -21,7 +21,7 @@ export type DiagEventType =
  * 로그 심각도.
  *
  * `trace` < `debug` < `info` < `warn` < `error` 순서로 높아지며,
- * {@linkcode LoggerOptions.minLevel} 이 이 순서로 하한을 정한다.
+ * `LoggerOptions.minLevel`이 이 순서로 하한을 정한다.
  */
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error'
 
@@ -51,7 +51,7 @@ export interface DiagEvent {
  * 마스킹을 거쳤다. 그래서 export해도 원본 값은 남지 않는다.
  */
 export interface LogRecord extends Required<Pick<DiagEvent, 'type'>> {
-  /** 자동 증가 키 ({@linkcode IdbSink}가 채움). 메모리 단계에선 없음. */
+  /** 자동 증가 키 (`IdbSink`가 채움). 메모리 단계에선 없음. */
   id?: number
   /** 기록 시각 (epoch ms). */
   ts: number

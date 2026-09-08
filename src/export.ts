@@ -4,7 +4,7 @@ import type { LogLevel, LogRecord } from './types'
 export interface LogFilter {
   /** 이 레벨 중 하나여야 통과. */
   levels?: LogLevel[]
-  /** 이 {@linkcode DiagEventType} 중 하나여야 통과. */
+  /** 이 `DiagEventType` 중 하나여야 통과. */
   types?: string[]
   /** 이 시각(epoch ms) 이후만. */
   since?: number

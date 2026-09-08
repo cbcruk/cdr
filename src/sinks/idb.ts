@@ -15,7 +15,7 @@ export interface IdbSinkOptions {
  *
  * 아무것도 전송하지 않는다. 병원 내부망처럼 outbound가 막힌 환경에서도
  * 동작하는 게 핵심이고, 꺼내는 건 사용자가 `/log`에서
- * {@linkcode IdbSink.read}와 {@linkcode downloadLogs}로 직접 한다.
+ * {@linkcode IdbSink.read}와 `downloadLogs`로 직접 한다.
  *
  * - autoIncrement key로 시간순 보존 (cursor 오름차순 = 오래된 순).
  * - 레코드 수가 `maxRecords`를 넘으면 초과분만큼 가장 오래된 것부터 삭제.

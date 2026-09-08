@@ -3,8 +3,8 @@ import type { LogRecord, Sink } from '../types'
 /**
  * 레코드를 브라우저 콘솔에 그대로 찍는 sink.
  *
- * dev 전용이다. prod에선 {@linkcode IdbSink}만 두는 게 보통이고,
- * {@linkcode setupDiagLogger}는 `dev: true`일 때만 이걸 끼운다.
+ * dev 전용이다. prod에선 `IdbSink`만 두는 게 보통이고,
+ * `setupDiagLogger`는 `dev: true`일 때만 이걸 끼운다.
  *
  * 레벨에 따라 `console.error`/`console.warn`/`console.log`로 나뉜다.
  */
