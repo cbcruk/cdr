@@ -33,6 +33,7 @@
     "watch": "vp pack --watch",
     "demo": "vp dev",
     "demo:build": "vp build",
+    "demo:build:pages": "vp build --base=/cdr/",
     "check": "vp check",
     "typecheck": "tsc --noEmit",
     "test": "vp test run",
