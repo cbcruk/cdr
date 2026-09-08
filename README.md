@@ -63,14 +63,23 @@ export const { diag, idbSink } = setupDiagLogger({
 이걸 일급 이벤트로 올린다.
 
 ```ts
-function handleSubmit() {
-  const result = schema.safeParse(formData)
-  if (!result.success) {
-    setFieldErrors(mapZodIssuesToFields(result.error.issues)) // 1) 사용자에게
-    diag.validationBlocked(result.error.issues.map((i) => i.path.join('.'))) // 2) 시스템에
+import { setupDiagLogger } from 'cdr'
+
+// 앱 쪽 조각들 — 검증기(zod 등)와 폼·API 함수 자리
+declare function validate(form: FormData): { ok: true } | { ok: false; paths: string[] }
+declare function showFieldErrors(paths: string[]): void
+declare function callApi(form: FormData): Promise<void>
+
+const { diag } = setupDiagLogger()
+
+async function handleSubmit(form: FormData) {
+  const result = validate(form)
+  if (!result.ok) {
+    showFieldErrors(result.paths) // 1) 사용자에게
+    diag.validationBlocked(result.paths) // 2) 시스템에
     return
   }
-  await callApi(result.data)
+  await callApi(form)
 }
 ```
 
@@ -83,14 +92,19 @@ function handleSubmit() {
 
 세 어댑터 모두 원본 console 출력은 유지하고 sink에 **한 부 더** 복사한다.
 
+아래 예제는 각각 붙여넣으면 그대로 돌도록 `setupDiagLogger()`를 다시 부른다.
+실제 앱에서는 [빠른 시작](#빠른-시작)에서 한 번 만든 `diag`를 import해 쓸 것.
+
 ### pino (browser)
 
 ```ts
 import pino from 'pino'
-import { pinoTransmit } from 'cdr'
+import { pinoTransmit, setupDiagLogger } from 'cdr'
+
+const { diag } = setupDiagLogger()
 
 const logger = pino({
-  browser: { transmit: pinoTransmit(diag, 'info') }, // warn 이상만 보존하려면 "warn"
+  browser: { transmit: pinoTransmit(diag, 'info') }, // warn 이상만 보존하려면 'warn'
 })
 ```
 
@@ -100,16 +114,22 @@ const logger = pino({
 
 ```ts
 import log from 'loglevel'
-import { attachLoglevel } from 'cdr'
+import { attachLoglevel, setupDiagLogger } from 'cdr'
 
-attachLoglevel(log, diag) // methodFactory를 래핑 후 rebuild
+const { diag } = setupDiagLogger()
+
+const detach = attachLoglevel(log, diag) // methodFactory를 래핑 후 rebuild
 ```
+
+`attachLoglevel`이 돌려주는 `detach()`를 부르면 원래 `methodFactory`로 되돌린다.
 
 ### consola
 
 ```ts
 import { consola } from 'consola'
-import { consolaReporter } from 'cdr'
+import { consolaReporter, setupDiagLogger } from 'cdr'
+
+const { diag } = setupDiagLogger()
 
 consola.addReporter(consolaReporter(diag)) // 기본 reporter 유지한 채 추가
 ```
@@ -120,7 +140,9 @@ consola.addReporter(consolaReporter(diag)) // 기본 reporter 유지한 채 추�
 "F12 → 우클릭 → Save as HAR" 대신 "`/log` 가서 내보내기" 한 줄.
 
 ```ts
-import { filterLogs, downloadLogs, copyLogs } from 'cdr'
+import { copyLogs, downloadLogs, filterLogs, setupDiagLogger } from 'cdr'
+
+const { idbSink } = setupDiagLogger()
 
 const records = await idbSink.read(2000) // 최신순
 const filtered = filterLogs(records, { levels: ['warn', 'error'] })
