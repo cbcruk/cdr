@@ -1,5 +1,5 @@
-import type { DiagLogger } from "../logger";
-import type { LogLevel } from "../types";
+import type { DiagLogger } from '../logger'
+import type { LogLevel } from '../types'
 
 /**
  * pino (browser) 어댑터.
@@ -14,46 +14,46 @@ import type { LogLevel } from "../types";
  *
  * transmit.level로 "이 레벨 이상만 보존"을 pino 쪽에서 거를 수도 있다.
  */
-export function pinoTransmit(diag: DiagLogger, level: LogLevel = "info") {
+export function pinoTransmit(diag: DiagLogger, level: LogLevel = 'info') {
   return {
     level,
     send(lvl: string, logEvent: PinoLogEvent) {
       diag.log({
-        type: "log",
+        type: 'log',
         level: normalizeLevel(lvl),
         // logEvent.messages = 로깅 메서드에 넘긴 인자들. 첫 문자열을 message로.
         message: extractMessage(logEvent),
         data: { bindings: logEvent.bindings, messages: logEvent.messages },
-        source: "pino",
-      });
+        source: 'pino',
+      })
     },
-  };
+  }
 }
 
 interface PinoLogEvent {
-  ts: number;
-  messages: unknown[];
-  bindings: unknown[];
-  level: { label: string; value: number };
+  ts: number
+  messages: unknown[]
+  bindings: unknown[]
+  level: { label: string; value: number }
 }
 
 function extractMessage(e: PinoLogEvent): string {
-  const first = e.messages?.[0];
-  return typeof first === "string" ? first : "";
+  const first = e.messages?.[0]
+  return typeof first === 'string' ? first : ''
 }
 
 function normalizeLevel(l: string): LogLevel {
   switch (l) {
-    case "fatal":
-    case "error":
-      return "error";
-    case "warn":
-      return "warn";
-    case "debug":
-      return "debug";
-    case "trace":
-      return "trace";
+    case 'fatal':
+    case 'error':
+      return 'error'
+    case 'warn':
+      return 'warn'
+    case 'debug':
+      return 'debug'
+    case 'trace':
+      return 'trace'
     default:
-      return "info";
+      return 'info'
   }
 }

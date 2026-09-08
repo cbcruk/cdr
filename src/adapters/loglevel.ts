@@ -1,5 +1,5 @@
-import type { DiagLogger } from "../logger";
-import type { LogLevel } from "../types";
+import type { DiagLogger } from '../logger'
+import type { LogLevel } from '../types'
 
 /**
  * loglevel 어댑터.
@@ -15,53 +15,53 @@ import type { LogLevel } from "../types";
  * @param log loglevel 루트 로거 또는 getLogger()로 만든 자식 로거
  */
 export function attachLoglevel(log: LoglevelLogger, diag: DiagLogger): () => void {
-  const original = log.methodFactory;
+  const original = log.methodFactory
 
   log.methodFactory = (methodName, logLevel, loggerName) => {
-    const raw = original(methodName, logLevel, loggerName);
+    const raw = original(methodName, logLevel, loggerName)
     return (...args: unknown[]) => {
-      raw(...args); // 1) 원본 console 출력 유지
+      raw(...args) // 1) 원본 console 출력 유지
       diag.log({
         // 2) sink에 복사
-        type: "log",
+        type: 'log',
         level: normalizeLevel(methodName),
-        message: typeof args[0] === "string" ? args[0] : "",
-        data: { args, logger: String(loggerName ?? "") },
-        source: "loglevel",
-      });
-    };
-  };
+        message: typeof args[0] === 'string' ? args[0] : '',
+        data: { args, logger: String(loggerName ?? '') },
+        source: 'loglevel',
+      })
+    }
+  }
 
-  log.rebuild(); // methodFactory 교체 후 필수
+  log.rebuild() // methodFactory 교체 후 필수
 
   // 원복 함수 반환 (테스트/해제용)
   return () => {
-    log.methodFactory = original;
-    log.rebuild();
-  };
+    log.methodFactory = original
+    log.rebuild()
+  }
 }
 
 interface LoglevelLogger {
-  methodFactory: MethodFactory;
-  rebuild(): void;
+  methodFactory: MethodFactory
+  rebuild(): void
 }
 type MethodFactory = (
   methodName: string,
   logLevel: number,
   loggerName: string | symbol,
-) => (...args: unknown[]) => void;
+) => (...args: unknown[]) => void
 
 function normalizeLevel(method: string): LogLevel {
   switch (method) {
-    case "error":
-      return "error";
-    case "warn":
-      return "warn";
-    case "debug":
-      return "debug";
-    case "trace":
-      return "trace";
+    case 'error':
+      return 'error'
+    case 'warn':
+      return 'warn'
+    case 'debug':
+      return 'debug'
+    case 'trace':
+      return 'trace'
     default:
-      return "info";
+      return 'info'
   }
 }

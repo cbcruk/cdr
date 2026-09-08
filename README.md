@@ -44,13 +44,13 @@ pnpm add pino      # 또는 loglevel, consola
 ## 빠른 시작
 
 ```ts
-import { setupDiagLogger } from "cdr";
+import { setupDiagLogger } from 'cdr'
 
 export const { diag, idbSink } = setupDiagLogger({
   release: import.meta.env.VITE_BUILD_ID,
   maxRecords: 5000, // 이 개수 넘으면 오래된 것부터 삭제
   dev: import.meta.env.DEV, // dev면 console에도 출력
-});
+})
 ```
 
 `setupDiagLogger`는 흔한 구성(prod: IndexedDB만, dev: + console)을 한 번에
@@ -64,13 +64,13 @@ export const { diag, idbSink } = setupDiagLogger({
 
 ```ts
 function handleSubmit() {
-  const result = schema.safeParse(formData);
+  const result = schema.safeParse(formData)
   if (!result.success) {
-    setFieldErrors(mapZodIssuesToFields(result.error.issues)); // 1) 사용자에게
-    diag.validationBlocked(result.error.issues.map((i) => i.path.join("."))); // 2) 시스템에
-    return;
+    setFieldErrors(mapZodIssuesToFields(result.error.issues)) // 1) 사용자에게
+    diag.validationBlocked(result.error.issues.map((i) => i.path.join('.'))) // 2) 시스템에
+    return
   }
-  await callApi(result.data);
+  await callApi(result.data)
 }
 ```
 
@@ -86,12 +86,12 @@ function handleSubmit() {
 ### pino (browser)
 
 ```ts
-import pino from "pino";
-import { pinoTransmit } from "cdr";
+import pino from 'pino'
+import { pinoTransmit } from 'cdr'
 
 const logger = pino({
-  browser: { transmit: pinoTransmit(diag, "info") }, // warn 이상만 보존하려면 "warn"
-});
+  browser: { transmit: pinoTransmit(diag, 'info') }, // warn 이상만 보존하려면 "warn"
+})
 ```
 
 `transmit.send`는 `browser.write`(콘솔 출력)와 분리돼 있어 출력은 그대로다.
@@ -99,19 +99,19 @@ const logger = pino({
 ### loglevel
 
 ```ts
-import log from "loglevel";
-import { attachLoglevel } from "cdr";
+import log from 'loglevel'
+import { attachLoglevel } from 'cdr'
 
-attachLoglevel(log, diag); // methodFactory를 래핑 후 rebuild
+attachLoglevel(log, diag) // methodFactory를 래핑 후 rebuild
 ```
 
 ### consola
 
 ```ts
-import { consola } from "consola";
-import { consolaReporter } from "cdr";
+import { consola } from 'consola'
+import { consolaReporter } from 'cdr'
 
-consola.addReporter(consolaReporter(diag)); // 기본 reporter 유지한 채 추가
+consola.addReporter(consolaReporter(diag)) // 기본 reporter 유지한 채 추가
 ```
 
 ## `/log` 라우트 — HAR 추출의 대체
@@ -120,14 +120,14 @@ consola.addReporter(consolaReporter(diag)); // 기본 reporter 유지한 채 추
 "F12 → 우클릭 → Save as HAR" 대신 "`/log` 가서 내보내기" 한 줄.
 
 ```ts
-import { filterLogs, downloadLogs, copyLogs } from "cdr";
+import { filterLogs, downloadLogs, copyLogs } from 'cdr'
 
-const records = await idbSink.read(2000); // 최신순
-const filtered = filterLogs(records, { levels: ["warn", "error"] });
+const records = await idbSink.read(2000) // 최신순
+const filtered = filterLogs(records, { levels: ['warn', 'error'] })
 
-downloadLogs(filtered, "ndjson"); // 파일로
-await copyLogs(filtered, "txt"); // 클립보드로 (메신저 붙여넣기용)
-await idbSink.clear(); // 사용자가 직접 비우기
+downloadLogs(filtered, 'ndjson') // 파일로
+await copyLogs(filtered, 'txt') // 클립보드로 (메신저 붙여넣기용)
+await idbSink.clear() // 사용자가 직접 비우기
 ```
 
 ## 설계 노트

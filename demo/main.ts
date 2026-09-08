@@ -1,22 +1,22 @@
-import { copyLogs, downloadLogs, filterLogs, setupDiagLogger } from "../src";
-import type { LogLevel, LogRecord } from "../src";
+import { copyLogs, downloadLogs, filterLogs, setupDiagLogger } from '../src'
+import type { LogLevel, LogRecord } from '../src'
 
 const { diag, idbSink } = setupDiagLogger({
-  release: "demo",
+  release: 'demo',
   maxRecords: 500,
   dev: true,
-});
+})
 
-const ALL_LEVELS: LogLevel[] = ["trace", "debug", "info", "warn", "error"];
+const ALL_LEVELS: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error']
 
 function $<T extends HTMLElement>(selector: string): T {
-  const node = document.querySelector<T>(selector);
-  if (!node) throw new Error(`missing element: ${selector}`);
-  return node;
+  const node = document.querySelector<T>(selector)
+  if (!node) throw new Error(`missing element: ${selector}`)
+  return node
 }
 
 function render(): void {
-  const app = $("#app");
+  const app = $('#app')
   app.innerHTML = `
     <header>
       <h1>cdr</h1>
@@ -80,160 +80,160 @@ function render(): void {
         <div class="records" id="records"></div>
       </div>
     </section>
-  `;
+  `
 }
 
 function wireTabs(): void {
-  const tabs = document.querySelectorAll<HTMLButtonElement>(".tab");
+  const tabs = document.querySelectorAll<HTMLButtonElement>('.tab')
   tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const target = tab.dataset.target;
-      tabs.forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
-      document.querySelectorAll<HTMLElement>(".panel").forEach((panel) => {
-        panel.dataset.active = String(panel.dataset.panel === target);
-      });
-      if (target === "log") void refreshViewer();
-    });
-  });
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.target
+      tabs.forEach((t) => t.setAttribute('aria-selected', String(t === tab)))
+      document.querySelectorAll<HTMLElement>('.panel').forEach((panel) => {
+        panel.dataset.active = String(panel.dataset.panel === target)
+      })
+      if (target === 'log') void refreshViewer()
+    })
+  })
 }
 
 function wireGenerator(): void {
-  $("#submit").addEventListener("click", () => {
-    const email = $<HTMLInputElement>("#email").value.trim();
-    const phone = $<HTMLInputElement>("#phone").value.trim();
-    const invalid: string[] = [];
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) invalid.push("email");
-    if (!/^\d{2,3}-\d{3,4}-\d{4}$/.test(phone)) invalid.push("phone");
+  $('#submit').addEventListener('click', () => {
+    const email = $<HTMLInputElement>('#email').value.trim()
+    const phone = $<HTMLInputElement>('#phone').value.trim()
+    const invalid: string[] = []
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) invalid.push('email')
+    if (!/^\d{2,3}-\d{3,4}-\d{4}$/.test(phone)) invalid.push('phone')
 
-    setFieldError("email", invalid.includes("email") ? "올바른 이메일이 아닙니다" : "");
-    setFieldError("phone", invalid.includes("phone") ? "올바른 전화번호가 아닙니다" : "");
+    setFieldError('email', invalid.includes('email') ? '올바른 이메일이 아닙니다' : '')
+    setFieldError('phone', invalid.includes('phone') ? '올바른 전화번호가 아닙니다' : '')
 
     if (invalid.length > 0) {
-      diag.validationBlocked(invalid);
+      diag.validationBlocked(invalid)
     } else {
-      diag.log({ type: "log", level: "info", message: "form submitted" });
+      diag.log({ type: 'log', level: 'info', message: 'form submitted' })
     }
-  });
+  })
 
-  document.querySelectorAll<HTMLButtonElement>("[data-emit]").forEach((btn) => {
-    btn.addEventListener("click", () => emit(btn.dataset.emit ?? ""));
-  });
+  document.querySelectorAll<HTMLButtonElement>('[data-emit]').forEach((btn) => {
+    btn.addEventListener('click', () => emit(btn.dataset.emit ?? ''))
+  })
 }
 
 function setFieldError(field: string, message: string): void {
-  const node = document.querySelector(`[data-err="${field}"]`);
-  if (node) node.textContent = message;
+  const node = document.querySelector(`[data-err="${field}"]`)
+  if (node) node.textContent = message
 }
 
 function emit(kind: string): void {
   switch (kind) {
-    case "schema":
-      diag.schemaMismatch("UserResponse", ["data.id", "data.profile.role"]);
-      break;
-    case "swallowed":
-      diag.swallowed("parseResponse", new Error("unexpected end of JSON input"));
-      break;
-    case "info":
-      diag.log({ type: "log", level: "info", message: "user opened patient list" });
-      break;
-    case "warn":
-      diag.log({ type: "log", level: "warn", message: "retry scheduled", data: { attempt: 2 } });
-      break;
-    case "error":
-      diag.log({ type: "log", level: "error", message: "request failed", data: { status: 503 } });
-      break;
-    case "sensitive":
+    case 'schema':
+      diag.schemaMismatch('UserResponse', ['data.id', 'data.profile.role'])
+      break
+    case 'swallowed':
+      diag.swallowed('parseResponse', new Error('unexpected end of JSON input'))
+      break
+    case 'info':
+      diag.log({ type: 'log', level: 'info', message: 'user opened patient list' })
+      break
+    case 'warn':
+      diag.log({ type: 'log', level: 'warn', message: 'retry scheduled', data: { attempt: 2 } })
+      break
+    case 'error':
+      diag.log({ type: 'log', level: 'error', message: 'request failed', data: { status: 503 } })
+      break
+    case 'sensitive':
       diag.log({
-        type: "log",
-        level: "info",
-        message: "api request payload",
+        type: 'log',
+        level: 'info',
+        message: 'api request payload',
         data: {
-          token: "eyJhbGciOiJIUzI1Niated",
-          email: "patient@example.org",
-          patientName: "홍길동",
+          token: 'eyJhbGciOiJIUzI1Niated',
+          email: 'patient@example.org',
+          patientName: '홍길동',
           count: 3,
           ok: true,
         },
-      });
-      break;
+      })
+      break
   }
 }
 
 function selectedLevels(): LogLevel[] {
   return ALL_LEVELS.filter(
     (lvl) => document.querySelector<HTMLInputElement>(`#lvl-${lvl}`)?.checked,
-  );
+  )
 }
 
 function renderLevelFilter(): void {
-  $("#levels").innerHTML = ALL_LEVELS.map(
+  $('#levels').innerHTML = ALL_LEVELS.map(
     (lvl) => `<label><input type="checkbox" id="lvl-${lvl}" checked /> ${lvl}</label>`,
-  ).join("");
-  document.querySelectorAll<HTMLInputElement>("#levels input").forEach((input) => {
-    input.addEventListener("change", () => void refreshViewer());
-  });
+  ).join('')
+  document.querySelectorAll<HTMLInputElement>('#levels input').forEach((input) => {
+    input.addEventListener('change', () => void refreshViewer())
+  })
 }
 
-let currentRecords: LogRecord[] = [];
+let currentRecords: LogRecord[] = []
 
 async function refreshViewer(): Promise<void> {
-  await diag.flush();
-  const all = await idbSink.read(500);
-  const levels = selectedLevels();
-  const text = $<HTMLInputElement>("#search").value.trim();
+  await diag.flush()
+  const all = await idbSink.read(500)
+  const levels = selectedLevels()
+  const text = $<HTMLInputElement>('#search').value.trim()
   currentRecords = filterLogs(all, {
     levels: levels.length ? levels : undefined,
     text: text || undefined,
-  });
-  renderRecords(currentRecords);
+  })
+  renderRecords(currentRecords)
 }
 
 function renderRecords(records: LogRecord[]): void {
-  $("#count").textContent = `${records.length} records`;
-  const list = $("#records");
+  $('#count').textContent = `${records.length} records`
+  const list = $('#records')
   if (records.length === 0) {
-    list.innerHTML = `<div class="empty">레코드가 없습니다. "이벤트 생성" 탭에서 만들어 보세요.</div>`;
-    return;
+    list.innerHTML = `<div class="empty">레코드가 없습니다. "이벤트 생성" 탭에서 만들어 보세요.</div>`
+    return
   }
   list.innerHTML = records
     .map((r) => {
-      const time = new Date(r.ts).toLocaleTimeString("ko-KR");
+      const time = new Date(r.ts).toLocaleTimeString('ko-KR')
       const data = Object.keys(r.data).length
         ? `<pre class="data">${escapeHtml(JSON.stringify(r.data))}</pre>`
-        : "";
+        : ''
       return `
         <div class="rec">
           <span class="lvl ${r.level}">${r.level}</span>
           <span class="meta"><span class="type">${r.type}</span>${time} · ${r.source}</span>
           <span class="body"><span class="msg">${escapeHtml(r.message)}</span>${data}</span>
-        </div>`;
+        </div>`
     })
-    .join("");
+    .join('')
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function wireViewer(): void {
-  $("#refresh").addEventListener("click", () => void refreshViewer());
-  $("#search").addEventListener("input", () => void refreshViewer());
-  $("#download").addEventListener("click", () => downloadLogs(currentRecords, "ndjson"));
-  $("#copy").addEventListener("click", () => {
-    void copyLogs(currentRecords, "txt").then(() => {
-      const btn = $("#copy");
-      const prev = btn.textContent;
-      btn.textContent = "복사됨!";
-      setTimeout(() => (btn.textContent = prev), 1200);
-    });
-  });
-  $("#clear").addEventListener("click", () => {
-    void idbSink.clear().then(() => refreshViewer());
-  });
+  $('#refresh').addEventListener('click', () => void refreshViewer())
+  $('#search').addEventListener('input', () => void refreshViewer())
+  $('#download').addEventListener('click', () => downloadLogs(currentRecords, 'ndjson'))
+  $('#copy').addEventListener('click', () => {
+    void copyLogs(currentRecords, 'txt').then(() => {
+      const btn = $('#copy')
+      const prev = btn.textContent
+      btn.textContent = '복사됨!'
+      setTimeout(() => (btn.textContent = prev), 1200)
+    })
+  })
+  $('#clear').addEventListener('click', () => {
+    void idbSink.clear().then(() => refreshViewer())
+  })
 }
 
-render();
-wireTabs();
-wireGenerator();
-renderLevelFilter();
-wireViewer();
+render()
+wireTabs()
+wireGenerator()
+renderLevelFilter()
+wireViewer()
