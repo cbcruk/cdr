@@ -1,25 +1,21 @@
-/**
- * 쓰기 시점 스크러버.
- *
- * 원칙: 디버깅에 필요한 건 "어느 필드가 어떤 모양으로 잘못됐나"이지
- * "그 값이 무엇이었나"가 아니다. 그래서 민감 키는 값을 지우고,
- * 그 외 값도 기본적으로 타입/형태로 축약한다(redactValues=true).
- *
- * 병원 앱처럼 on-device여도 export로 결국 밖에 나갈 수 있으므로
- * 저장 자체를 안전하게 만든다.
- */
+/** {@linkcode makeScrubber}의 마스킹 정책. */
 export interface ScrubOptions {
-  /** 키 이름이 이 패턴에 걸리면 값 자체를 마스킹. */
+  /**
+   * 키 이름이 이 패턴 중 하나에 걸리면 값 자체를 마스킹한다.
+   *
+   * 기본값은 password/token/authorization/주민번호/환자·진단/연락처 등
+   * 흔한 민감 키를 덮는 내장 목록이다. 지정하면 내장 목록을 대체한다.
+   */
   sensitiveKeys?: RegExp[]
-  /** true면 민감하지 않은 값도 원본 대신 형태 요약으로 치환. */
+  /** `true`면 민감하지 않은 값도 원본 대신 형태 요약으로 치환. 기본 `true`. */
   redactValues?: boolean
-  /** 객체 순회 최대 깊이 (순환/거대 객체 방어). */
+  /** 객체 순회 최대 깊이 (순환/거대 객체 방어). 기본 6. */
   maxDepth?: number
 }
 
 const DEFAULT_SENSITIVE: RegExp[] = [
   /pass(word)?/i,
-  /token/i, // refreshToken/accessToken — 이번 대화의 그 토큰
+  /token/i, // refreshToken/accessToken
   /secret/i,
   /authorization/i,
   /cookie/i,
@@ -50,6 +46,43 @@ function summarize(v: unknown): unknown {
   }
 }
 
+/**
+ * 쓰기 시점 스크러버를 만든다.
+ *
+ * 원칙: 디버깅에 필요한 건 "어느 필드가 어떤 모양으로 잘못됐나"이지
+ * "그 값이 무엇이었나"가 아니다. 그래서 민감 키는 값을 지우고, 그 외 값도
+ * 기본적으로 타입/형태로 축약한다.
+ *
+ * 병원 앱처럼 on-device여도 export로 결국 밖에 나갈 수 있으므로 저장 자체를
+ * 안전하게 만든다. {@linkcode DiagLogger}는 이 함수를 내부에서 호출하므로,
+ * 보통은 {@linkcode LoggerOptions.scrub}에 옵션만 넘기면 된다.
+ *
+ * `Error`는 디버깅의 핵심이라 구조(`name`/`stack` 앞 8줄)를 보존하되
+ * `message`는 `redactValues`가 켜져 있으면 지운다. 순환 참조와 `maxDepth`
+ * 초과 지점은 각각 `'‹circular›'`, `'‹depth-limit›'` 표식으로 남고,
+ * 배열은 앞 50개까지만 순회한다.
+ *
+ * @param opts 마스킹 정책. 생략하면 전부 기본값.
+ * @returns 객체를 같은 모양으로 마스킹해 돌려주는 함수. 원본은 건드리지 않는다.
+ *
+ * @example 기본 정책으로 마스킹
+ * ```ts
+ * import { makeScrubber } from 'cdr'
+ *
+ * const scrub = makeScrubber()
+ * scrub({ userId: 'u_123', accessToken: 'abc' })
+ * // { userId: '‹string:5›', accessToken: '‹masked›' }
+ * ```
+ *
+ * @example 값은 남기고 민감 키만 가리기
+ * ```ts
+ * import { makeScrubber } from 'cdr'
+ *
+ * const scrub = makeScrubber({ redactValues: false })
+ * scrub({ page: 3, password: 'hunter2' })
+ * // { page: 3, password: '‹masked›' }
+ * ```
+ */
 export function makeScrubber(opts: ScrubOptions = {}) {
   const sensitive = opts.sensitiveKeys ?? DEFAULT_SENSITIVE
   const redactValues = opts.redactValues ?? true
@@ -90,9 +123,18 @@ export function makeScrubber(opts: ScrubOptions = {}) {
     return redactValues ? summarize(value) : value
   }
 
+  /**
+   * 객체를 마스킹한다.
+   *
+   * @template T 입력 객체 타입. 반환값은 같은 타입으로 다루되, 실제 값은
+   * 마스킹된 문자열로 바뀌어 있다.
+   * @param data 마스킹할 객체.
+   * @returns 같은 키 구조의 새 객체.
+   */
   return function scrub<T extends Record<string, unknown>>(data: T): T {
     return walk(data, 0, new WeakSet()) as T
   }
 }
 
+/** {@linkcode makeScrubber}가 반환하는 마스킹 함수. */
 export type Scrubber = ReturnType<typeof makeScrubber>

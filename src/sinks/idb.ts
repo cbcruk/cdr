@@ -1,29 +1,51 @@
 import type { LogRecord, Sink } from '../types'
 
-/**
- * pull 모델 sink. 아무것도 전송하지 않고 사용자 기기에만 쌓는다.
- * 병원 내부망처럼 outbound가 막힌 환경에서도 동작하는 게 핵심.
- *
- * - autoIncrement key로 시간순 보존 (cursor 오름차순 = 오래된 순)
- * - count > maxRecords면 초과분만큼 가장 오래된 것 삭제 (rotation)
- * - 매 레코드가 아니라 배치로 한 트랜잭션 → 오버헤드 최소화
- *
- * 의존성 없는 순수 IndexedDB. idb 같은 래퍼를 써도 무방.
- */
+/** {@linkcode IdbSink} 생성 옵션. */
 export interface IdbSinkOptions {
+  /** IndexedDB 데이터베이스 이름. 기본 `'cdr'`. */
   dbName?: string
+  /** object store 이름. 기본 `'logs'`. */
   storeName?: string
   /** 유지할 최대 레코드 수. 넘으면 오래된 것부터 삭제. 기본 5000. */
   maxRecords?: number
 }
 
+/**
+ * 레코드를 사용자 기기의 IndexedDB에만 쌓는 pull 모델 sink.
+ *
+ * 아무것도 전송하지 않는다. 병원 내부망처럼 outbound가 막힌 환경에서도
+ * 동작하는 게 핵심이고, 꺼내는 건 사용자가 `/log`에서
+ * {@linkcode IdbSink.read}와 {@linkcode downloadLogs}로 직접 한다.
+ *
+ * - autoIncrement key로 시간순 보존 (cursor 오름차순 = 오래된 순).
+ * - 레코드 수가 `maxRecords`를 넘으면 초과분만큼 가장 오래된 것부터 삭제.
+ * - 매 레코드가 아니라 배치로 한 트랜잭션 → 오버헤드 최소화.
+ *
+ * 의존성 없는 순수 IndexedDB. `idb` 같은 래퍼를 써도 무방하다.
+ *
+ * @example /log 라우트에서 읽고 비우기
+ * ```ts
+ * import { IdbSink, downloadLogs } from 'cdr'
+ *
+ * const sink = new IdbSink({ maxRecords: 5000 })
+ * const records = await sink.read(500)
+ * downloadLogs(records)
+ * await sink.clear()
+ * ```
+ */
 export class IdbSink implements Sink {
+  /** sink 이름. 항상 `'indexeddb'`. */
   readonly name = 'indexeddb'
   private dbName: string
   private storeName: string
   private maxRecords: number
   private dbPromise: Promise<IDBDatabase> | null = null
 
+  /**
+   * sink를 만든다. 데이터베이스는 첫 읽기·쓰기 때 열린다.
+   *
+   * @param opts 데이터베이스 이름과 보존 상한.
+   */
   constructor(opts: IdbSinkOptions = {}) {
     this.dbName = opts.dbName ?? 'cdr'
     this.storeName = opts.storeName ?? 'logs'
@@ -51,6 +73,14 @@ export class IdbSink implements Sink {
     return this.dbPromise
   }
 
+  /**
+   * 배치를 한 트랜잭션으로 저장하고, 이어서 오래된 레코드를 정리한다.
+   *
+   * `id`는 store가 autoIncrement로 채우므로 넣기 전에 떼어낸다.
+   *
+   * @param records 저장할 레코드. 빈 배열이면 아무것도 하지 않는다.
+   * @returns 저장과 정리가 끝나면 resolve.
+   */
   async write(records: LogRecord[]): Promise<void> {
     if (records.length === 0) return
     const db = await this.open()
@@ -96,7 +126,14 @@ export class IdbSink implements Sink {
     })
   }
 
-  /** /log 라우트에서 읽기용. 최신순으로 limit개. */
+  /**
+   * 쌓인 레코드를 최신순으로 읽는다.
+   *
+   * `/log` 라우트에서 목록을 그릴 때 쓴다.
+   *
+   * @param limit 가져올 최대 개수. 기본 1000.
+   * @returns 최신 레코드부터 `limit`개. 저장된 게 없으면 빈 배열.
+   */
   async read(limit = 1000): Promise<LogRecord[]> {
     const db = await this.open()
     return new Promise((resolve, reject) => {
@@ -118,7 +155,13 @@ export class IdbSink implements Sink {
     })
   }
 
-  /** 사용자가 /log에서 직접 비우기. */
+  /**
+   * 저장된 레코드를 전부 지운다.
+   *
+   * 사용자가 `/log`에서 직접 비울 때 쓴다. 되돌릴 수 없다.
+   *
+   * @returns 삭제가 끝나면 resolve.
+   */
   async clear(): Promise<void> {
     const db = await this.open()
     await new Promise<void>((resolve, reject) => {

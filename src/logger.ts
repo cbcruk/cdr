@@ -1,16 +1,19 @@
 import type { BaseContext, DiagEvent, LogLevel, LogRecord, Sink } from './types'
 import { makeScrubber, type ScrubOptions, type Scrubber } from './scrub'
 
+/** {@linkcode DiagLogger} 생성 옵션. */
 export interface LoggerOptions {
+  /** 레코드를 흘려보낼 목적지들. 하나가 실패해도 나머지는 계속 받는다. */
   sinks: Sink[]
-  /** 환경 컨텍스트 (release 버전 등). url/sessionId는 자동 채움. */
+  /** 환경 컨텍스트 (release 버전 등). `url`/`sessionId`는 자동 채움. */
   context?: Partial<BaseContext>
   /** flush 주기(ms). 기본 2000. */
   flushIntervalMs?: number
   /** 한 번에 쌓이는 메모리 버퍼 상한. 넘으면 즉시 flush. 기본 100. */
   maxBufferSize?: number
-  /** 이 레벨 미만은 버린다. 기본 'debug'. */
+  /** 이 레벨 미만은 버린다. 기본 `'debug'`. */
   minLevel?: LogLevel
+  /** 저장 직전 마스킹 정책. 생략하면 기본 정책이 적용된다. */
   scrub?: ScrubOptions
 }
 
@@ -31,6 +34,30 @@ function randomId(): string {
   }
 }
 
+/**
+ * 진단 이벤트를 모아 주기적으로 sink에 흘려보내는 로거.
+ *
+ * 기록은 동기, 쓰기는 비동기 배치다. 버퍼가 `maxBufferSize`에 닿거나
+ * `flushIntervalMs`가 지나면 비우고, 탭이 숨겨지거나 종료될 때도 한 번 더
+ * 비워 유실을 줄인다. sink가 던지는 예외는 삼켜서 로깅이 앱을 깨지 않게 한다.
+ *
+ * 흔한 구성은 {@linkcode setupDiagLogger}가 대신 세워 준다. 직접 생성하는 건
+ * sink 조합이나 버퍼 정책을 손볼 때다.
+ *
+ * @example 직접 조립
+ * ```ts
+ * import { DiagLogger, IdbSink } from 'cdr'
+ *
+ * const logger = new DiagLogger({
+ *   sinks: [new IdbSink()],
+ *   context: { release: '2026.09.1' },
+ *   minLevel: 'info',
+ * })
+ *
+ * logger.swallowed('checkout.submit', new Error('boom'))
+ * await logger.flush()
+ * ```
+ */
 export class DiagLogger {
   private sinks: Sink[]
   private scrub: Scrubber
@@ -42,6 +69,11 @@ export class DiagLogger {
   private readonly baseCtx: BaseContext
   private listenersBound = false
 
+  /**
+   * 로거를 만들고 곧바로 주기 flush와 생명주기 훅을 건다.
+   *
+   * @param opts sink와 버퍼·마스킹 정책.
+   */
   constructor(opts: LoggerOptions) {
     this.sinks = opts.sinks
     this.scrub = makeScrubber(opts.scrub)
@@ -56,7 +88,15 @@ export class DiagLogger {
     this.start()
   }
 
-  /** 진단 이벤트 기록. 동기 호출이고, 실제 쓰기는 비동기 배치로 미뤄진다. */
+  /**
+   * 진단 이벤트를 기록한다.
+   *
+   * 동기 호출이고, 실제 쓰기는 비동기 배치로 미뤄진다. `minLevel` 미만이면
+   * 조용히 버린다. `data`는 이 시점에 마스킹되므로, 나중에 객체를 바꿔도
+   * 기록된 값은 변하지 않는다.
+   *
+   * @param event 기록할 이벤트. `level`/`source`는 각각 `'info'`/`'app'`이 기본.
+   */
   log(event: DiagEvent): void {
     const level = event.level ?? 'info'
     if (LEVEL_ORDER[level] < this.minLevel) return
@@ -75,17 +115,48 @@ export class DiagLogger {
     if (this.buffer.length >= this.maxBufferSize) void this.flush()
   }
 
-  /** 의미별 헬퍼 — 호출부가 type을 외울 필요 없게. */
+  /**
+   * 검증 실패로 동작을 막았으나 UI가 침묵한 상황을 `warn`으로 기록한다.
+   *
+   * 필드 이름만 남기고 입력값은 남기지 않는다.
+   *
+   * @param fields 막힌 필드 경로 (예: `['email', 'address.zip']`).
+   * @param source 출처 표시. 기본 `'app'`.
+   */
   validationBlocked(fields: string[], source = 'app') {
     this.log({ type: 'validation_blocked', level: 'warn', source, data: { fields } })
   }
+
+  /**
+   * 응답이 스키마와 어긋난 상황을 `error`로 기록한다.
+   *
+   * @param schema 어긋난 스키마 이름.
+   * @param paths 문제가 난 경로 목록.
+   * @param source 출처 표시. 기본 `'app'`.
+   */
   schemaMismatch(schema: string, paths: string[], source = 'app') {
     this.log({ type: 'schema_mismatch', level: 'error', source, data: { schema, paths } })
   }
+
+  /**
+   * catch 했지만 사용자에게 표면화하지 않은 예외를 `error`로 기록한다.
+   *
+   * @param where 삼킨 지점의 이름 (예: `'checkout.submit'`).
+   * @param err 삼킨 예외. `Error`면 `name`/`stack`이 보존된다.
+   * @param source 출처 표시. 기본 `'app'`.
+   */
   swallowed(where: string, err?: unknown, source = 'app') {
     this.log({ type: 'swallowed_exception', level: 'error', source, data: { where, err } })
   }
 
+  /**
+   * 버퍼에 쌓인 레코드를 모든 sink에 한 번에 넘긴다.
+   *
+   * 버퍼는 넘기기 전에 비우므로, 실패한 sink의 레코드는 재시도되지 않는다.
+   * sink가 던진 예외는 삼켜지고, 다른 sink는 영향을 받지 않는다.
+   *
+   * @returns 모든 sink의 쓰기가 끝나면 resolve. 버퍼가 비었으면 즉시 resolve.
+   */
   async flush(): Promise<void> {
     if (this.buffer.length === 0) return
     const batch = this.buffer
@@ -125,7 +196,13 @@ export class DiagLogger {
     })
   }
 
-  /** 정리 (테스트/SPA 언마운트용). */
+  /**
+   * 주기 flush를 멈추고 마지막으로 한 번 비운다.
+   *
+   * 테스트나 SPA 언마운트에서 타이머를 남기지 않으려고 쓴다. 마지막 flush는
+   * 기다리지 않으므로, 완료를 보장하려면 {@linkcode DiagLogger.flush}를 먼저
+   * await 할 것. 생명주기 리스너는 해제되지 않는다.
+   */
   dispose(): void {
     if (this.timer) clearInterval(this.timer)
     this.timer = null
