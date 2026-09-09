@@ -231,6 +231,13 @@ button.btn.primary {
   display: block;
 }
 
+.rec .meta .trace-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
 .rec .body .msg {
   color: var(--text);
 }

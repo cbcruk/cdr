@@ -1,10 +1,17 @@
+import { setupTrace, spanContext, trace } from 'console-trace'
 import { copyLogs, downloadLogs, filterLogs, setupDiagLogger } from '../src'
 import type { LogLevel, LogRecord } from '../src'
+
+// 프로덕션에 가까운 설정: 오버레이도, 트리 보존도, 소스 캡처도 끈다. 여기서
+// 필요한 건 화면이 아니라 레코드에 붙일 상관 식별자뿐이다.
+setupTrace({ overlay: false, retain: false, captureSource: false })
 
 const { diag, idbSink } = setupDiagLogger({
   release: 'demo',
   maxRecords: 500,
   dev: true,
+  // 이 한 줄이 아래 diag 호출부를 하나도 건드리지 않고 레코드를 묶어 준다.
+  enrich: spanContext,
 })
 
 const ALL_LEVELS: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error']
@@ -99,24 +106,29 @@ function wireTabs(): void {
 
 function wireGenerator(): void {
   $('#submit').addEventListener('click', () => {
-    const email = $<HTMLInputElement>('#email').value.trim()
-    const phone = $<HTMLInputElement>('#phone').value.trim()
-    const invalid: string[] = []
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) invalid.push('email')
-    if (!/^\d{2,3}-\d{3,4}-\d{4}$/.test(phone)) invalid.push('phone')
+    // 사용자 동작 하나를 span 하나로. 이 안에서 나온 레코드는 전부 같은
+    // trace_id를 달고 나온다.
+    trace('form.submit', () => {
+      const email = $<HTMLInputElement>('#email').value.trim()
+      const phone = $<HTMLInputElement>('#phone').value.trim()
+      const invalid: string[] = []
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) invalid.push('email')
+      if (!/^\d{2,3}-\d{3,4}-\d{4}$/.test(phone)) invalid.push('phone')
 
-    setFieldError('email', invalid.includes('email') ? '올바른 이메일이 아닙니다' : '')
-    setFieldError('phone', invalid.includes('phone') ? '올바른 전화번호가 아닙니다' : '')
+      setFieldError('email', invalid.includes('email') ? '올바른 이메일이 아닙니다' : '')
+      setFieldError('phone', invalid.includes('phone') ? '올바른 전화번호가 아닙니다' : '')
 
-    if (invalid.length > 0) {
-      diag.validationBlocked(invalid)
-    } else {
-      diag.log({ type: 'log', level: 'info', message: 'form submitted' })
-    }
+      if (invalid.length > 0) {
+        trace('form.validate', () => diag.validationBlocked(invalid))
+      } else {
+        diag.log({ type: 'log', level: 'info', message: 'form submitted' })
+      }
+    })
   })
 
   document.querySelectorAll<HTMLButtonElement>('[data-emit]').forEach((btn) => {
-    btn.addEventListener('click', () => emit(btn.dataset.emit ?? ''))
+    const kind = btn.dataset.emit ?? ''
+    btn.addEventListener('click', () => trace(`emit.${kind}`, () => emit(kind)))
   })
 }
 
@@ -201,10 +213,13 @@ function renderRecords(records: LogRecord[]): void {
       const data = Object.keys(r.data).length
         ? `<pre class="data">${escapeHtml(JSON.stringify(r.data))}</pre>`
         : ''
+      // ctx는 인덱스 시그니처라 unknown으로 나온다. 좁혀서 쓴다.
+      const traceId = typeof r.ctx.trace_id === 'string' ? r.ctx.trace_id : null
+      const traceBadge = traceId ? ` · <span class="trace-id">${escapeHtml(traceId)}</span>` : ''
       return `
         <div class="rec">
           <span class="lvl ${r.level}">${r.level}</span>
-          <span class="meta"><span class="type">${r.type}</span>${time} · ${r.source}</span>
+          <span class="meta"><span class="type">${r.type}</span>${time} · ${r.source}${traceBadge}</span>
           <span class="body"><span class="msg">${escapeHtml(r.message)}</span>${data}</span>
         </div>`
     })
