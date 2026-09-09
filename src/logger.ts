@@ -15,6 +15,21 @@ export interface LoggerOptions {
   minLevel?: LogLevel
   /** 저장 직전 마스킹 정책. 생략하면 기본 정책이 적용된다. */
   scrub?: ScrubOptions
+  /**
+   * 매 레코드마다 불려서 `ctx`에 합쳐질 필드를 돌려주는 함수.
+   *
+   * `context`가 생성 시점에 한 번 고정되는 것과 달리 기록 시점마다 평가되므로,
+   * 그때그때 달라지는 값을 붙일 때 쓴다. 화면 경로, 로그인 역할, 진행 중인
+   * 작업 식별자 같은 것들이다.
+   *
+   * 반환값은 **스크러버를 거치지 않는다.** `ctx`는 원래 `url`/`release`처럼
+   * 안전한 메타데이터 자리이고, 상관 식별자는 마스킹되면 쓸모가 없어진다.
+   * 그러니 값이 아니라 표식만 담을 것.
+   *
+   * 여기서 던진 예외는 삼켜지고 그 레코드는 보강 없이 저장된다. 로깅이
+   * 앱을 깨지 않는다는 원칙이 보강 함수에도 적용된다.
+   */
+  enrich?: () => Record<string, unknown>
 }
 
 const LEVEL_ORDER: Record<LogLevel, number> = {
@@ -67,6 +82,7 @@ export class DiagLogger {
   private readonly maxBufferSize: number
   private readonly minLevel: number
   private readonly baseCtx: BaseContext
+  private readonly enrich?: () => Record<string, unknown>
   private listenersBound = false
 
   /**
@@ -80,6 +96,7 @@ export class DiagLogger {
     this.flushIntervalMs = opts.flushIntervalMs ?? 2000
     this.maxBufferSize = opts.maxBufferSize ?? 100
     this.minLevel = LEVEL_ORDER[opts.minLevel ?? 'debug']
+    this.enrich = opts.enrich
     this.baseCtx = {
       url: typeof location !== 'undefined' ? location.href : '',
       sessionId: randomId(),
@@ -93,7 +110,8 @@ export class DiagLogger {
    *
    * 동기 호출이고, 실제 쓰기는 비동기 배치로 미뤄진다. `minLevel` 미만이면
    * 조용히 버린다. `data`는 이 시점에 마스킹되므로, 나중에 객체를 바꿔도
-   * 기록된 값은 변하지 않는다.
+   * 기록된 값은 변하지 않는다. `enrich`가 있으면 이 시점에 불려서 결과가
+   * `ctx`에 합쳐진다.
    *
    * @param event 기록할 이벤트. `level`/`source`는 각각 `'info'`/`'app'`이 기본.
    */
@@ -108,7 +126,7 @@ export class DiagLogger {
       message: event.message ?? '',
       data: event.data ? this.scrub(event.data) : {}, // ← 쓰기 시점 마스킹
       source: event.source ?? 'app',
-      ctx: { ...this.baseCtx, url: this.currentUrl() },
+      ctx: { ...this.baseCtx, url: this.currentUrl(), ...this.enrichment() },
     }
 
     this.buffer.push(record)
@@ -170,6 +188,16 @@ export class DiagLogger {
         }
       }),
     )
+  }
+
+  /** 보강 함수가 던져도 그 레코드만 보강 없이 간다. */
+  private enrichment(): Record<string, unknown> {
+    if (!this.enrich) return {}
+    try {
+      return this.enrich()
+    } catch {
+      return {}
+    }
   }
 
   private currentUrl(): string {
