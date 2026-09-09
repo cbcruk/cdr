@@ -11,6 +11,11 @@ export interface TracePluginOptions {
    *
    * Requires `@babel/core`, an optional peer dependency, and is unnecessary in
    * `native` mode. Default `false`.
+   *
+   * The rewrite moves each `async` body into a generator, which rebinds what
+   * the enclosing function provided. Four constructs are rejected with a
+   * code-frame error rather than miscompiled: `super`, `new.target`, an async
+   * arrow's `arguments`, and `for await...of`.
    */
   transform?: boolean
   /**

@@ -25,6 +25,8 @@ function shouldTransform(id: string): boolean {
  * - `transform` — downlevel `async` functions onto `runAsync` so the ambient
  *   span survives `await` in `fallback` mode. Requires `@babel/core`, an
  *   optional peer dependency. Unnecessary in `native` mode. Default `false`.
+ *   Rejects `super`, `new.target`, an async arrow's `arguments`, and
+ *   `for await...of` rather than miscompiling them.
  * - `importSource` — module the injected `runAsync` import resolves to.
  *   Default `'@cbcruk/console-trace'`; point it elsewhere when consuming the library
  *   through an alias or from source.
