@@ -56,6 +56,7 @@ function render(): void {
           <button class="btn" data-emit="info">일반 로그 (info)</button>
           <button class="btn" data-emit="warn">경고 (warn)</button>
           <button class="btn" data-emit="error">에러 (error)</button>
+          <button class="btn" data-emit="async">비동기 작업 (await 이후 기록)</button>
         </div>
       </div>
 
@@ -149,6 +150,16 @@ function emit(kind: string): void {
     case 'error':
       diag.log({ type: 'log', level: 'error', message: 'request failed', data: { status: 503 } })
       break
+    case 'async':
+      // await 너머의 귀속을 눈으로 보라고 둔 버튼이다. 앞뒤로 한 번씩
+      // 기록하는데, 브라우저에 네이티브 AsyncContext가 없고 Vite 변환도
+      // 꺼져 있으면 뒤쪽 레코드에만 trace_id가 붙지 않는다.
+      void (async () => {
+        diag.log({ type: 'log', level: 'info', message: 'api call started' })
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        diag.log({ type: 'log', level: 'info', message: 'api call finished' })
+      })()
+      break
     case 'sensitive':
       diag.log({
         type: 'log',
@@ -184,8 +195,19 @@ function renderLevelFilter(): void {
 let currentRecords: LogRecord[] = []
 
 async function refreshViewer(): Promise<void> {
-  await diag.flush()
-  const all = await idbSink.read(500)
+  let all: LogRecord[]
+
+  try {
+    await diag.flush()
+    all = await idbSink.read(500)
+  } catch {
+    // 시크릿 모드나 정책으로 저장소가 막힌 브라우저가 있다. 기록은 로거가
+    // 예외를 삼켜서 앱을 깨지 않지만, 읽기는 여기서 멈춘다. 빈 화면 대신
+    // 왜 비었는지를 보여준다.
+    renderStorageUnavailable()
+    return
+  }
+
   const levels = selectedLevels()
   const text = $<HTMLInputElement>('#search').value.trim()
   currentRecords = filterLogs(all, {
@@ -193,6 +215,13 @@ async function refreshViewer(): Promise<void> {
     text: text || undefined,
   })
   renderRecords(currentRecords)
+}
+
+function renderStorageUnavailable(): void {
+  currentRecords = []
+  $('#count').textContent = '0 records'
+  $('#records').innerHTML =
+    `<div class="empty" data-state="storage-unavailable">이 브라우저에서 저장소를 사용할 수 없습니다. 시크릿 창이거나 정책으로 막혀 있으면 기록을 보관하지 못합니다.</div>`
 }
 
 function renderRecords(records: LogRecord[]): void {
@@ -243,6 +272,7 @@ function wireViewer(): void {
     void diag
       .flush()
       .then(() => idbSink.clear())
+      .catch(() => undefined)
       .then(() => refreshViewer())
   })
 }

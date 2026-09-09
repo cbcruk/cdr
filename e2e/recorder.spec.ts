@@ -142,3 +142,35 @@ test('clearing right after generating events leaves nothing behind', async ({ pa
 
   await expect(page.locator('#records .rec')).toHaveCount(0)
 })
+
+test('the text filter narrows the list without touching the store', async ({ page }) => {
+  await page.locator('[data-emit="info"]').click()
+  await page.locator('[data-emit="error"]').click()
+
+  await openViewer(page)
+  await expect(page.locator('#records .rec')).toHaveCount(2)
+
+  await page.locator('#search').fill('request failed')
+  await expect(page.locator('#records .rec')).toHaveCount(1)
+  await expect(page.locator('#records .rec .lvl')).toHaveText('error')
+
+  // Filtering is a view concern; clearing it brings everything back.
+  await page.locator('#search').fill('')
+  await expect(page.locator('#records .rec')).toHaveCount(2)
+})
+
+test('copying puts the visible records on the clipboard as text', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+
+  await page.locator('[data-emit="schema"]').click()
+
+  await openViewer(page)
+  await page.locator('#copy').click()
+
+  // The button confirms, which is the only signal a user gets.
+  await expect(page.locator('#copy')).toHaveText('복사됨!')
+
+  const clipboard = await page.evaluate(() => navigator.clipboard.readText())
+
+  expect(clipboard).toContain('schema_mismatch')
+})

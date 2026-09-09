@@ -162,6 +162,15 @@ export class IdbSink implements Sink {
    *
    * @returns 삭제가 끝나면 resolve.
    */
+  /**
+   * 저장소를 열 수 없는 브라우저에서는 거부된다.
+   *
+   * 시크릿 창이나 정책으로 IndexedDB가 막힌 환경이 있다. 기록 경로는
+   * {@linkcode DiagLogger.flush}가 sink 예외를 삼켜 앱을 깨지 않지만, 읽기와
+   * 비우기는 호출부가 직접 처리해야 한다. `/log` 화면이라면 빈 목록 대신
+   * 저장소를 쓸 수 없다는 사실을 보여줄 것. 레코드가 없는 것과 못 읽는 것은
+   * 다른 상태다.
+   */
   async clear(): Promise<void> {
     const db = await this.open()
     await new Promise<void>((resolve, reject) => {
