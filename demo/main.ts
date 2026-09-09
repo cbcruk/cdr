@@ -1,17 +1,12 @@
-import { setupTrace, spanContext, trace } from '@cbcruk/console-trace'
-import { copyLogs, downloadLogs, filterLogs, setupDiagLogger } from '../src'
+import { copyLogs, downloadLogs, filterLogs, setupDiagLogger, trace } from '../src'
 import type { LogLevel, LogRecord } from '../src'
-
-// 프로덕션에 가까운 설정: 오버레이도, 트리 보존도, 소스 캡처도 끈다. 여기서
-// 필요한 건 화면이 아니라 레코드에 붙일 상관 식별자뿐이다.
-setupTrace({ overlay: false, retain: false, captureSource: false })
 
 const { diag, idbSink } = setupDiagLogger({
   release: 'demo',
   maxRecords: 500,
   dev: true,
   // 이 한 줄이 아래 diag 호출부를 하나도 건드리지 않고 레코드를 묶어 준다.
-  enrich: spanContext,
+  trace: true,
 })
 
 const ALL_LEVELS: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error']

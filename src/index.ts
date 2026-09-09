@@ -27,6 +27,7 @@
 import { DiagLogger, type LoggerOptions } from './logger'
 import { IdbSink, type IdbSinkOptions } from './sinks/idb'
 import { ConsoleSink } from './sinks/console'
+import { configureTraceForDiagnostics, spanContext } from './trace'
 
 export { DiagLogger } from './logger'
 export type { LoggerOptions } from './logger'
@@ -35,6 +36,7 @@ export type { IdbSinkOptions } from './sinks/idb'
 export { ConsoleSink } from './sinks/console'
 export { makeScrubber } from './scrub'
 export type { ScrubOptions, Scrubber } from './scrub'
+export { configureTraceForDiagnostics, spanContext, trace } from './trace'
 
 export * from './types'
 export * from './export'
@@ -55,11 +57,31 @@ export interface SetupOptions {
   /** IndexedDB sink 세부 설정. `maxRecords`보다 우선한다. */
   idb?: IdbSinkOptions
   /**
+   * 레코드에 상관 식별자를 붙인다. 기본 `false`.
+   *
+   * 켜면 {@linkcode trace}로 감싼 사용자 동작 하나에서 나온 레코드가 같은
+   * `trace_id`를 달고, 중첩된 단계는 `parent_id`로 이어진다. 내보낸 파일을
+   * 읽을 때 "이 레코드들이 같은 동작에서 나왔나"에 답할 수 있게 된다.
+   * `enrich` 배선과 진단용 기본값 설정을 대신 해 준다.
+   *
+   * **정확도 경계.** 동기 구간은 언제나 정확하다. `await`를 넘는 귀속은
+   * 브라우저에 네이티브 `AsyncContext`가 있거나 트레이서의 Vite 변환을
+   * 켰을 때만 정확하다. 그 밖에는 타이머, 프라미스 반응, 나중에 도착한
+   * 이벤트에서 기록된 레코드에 식별자가 붙지 않는다. **식별자가 없다는 건
+   * 귀속되지 않았다는 뜻이지 무관하다는 뜻이 아니다.** 틀린 동작에 묶이는
+   * 일은 없다.
+   *
+   * 개발 중 오버레이까지 띄우려면 이 옵션 대신 트레이서를 직접 설정할 것.
+   */
+  trace?: boolean
+  /**
    * 매 레코드마다 `ctx`에 합칠 필드를 돌려주는 함수.
    *
    * 상관 식별자처럼 기록 시점마다 달라지는 값을 붙이는 자리다. 반환값은
    * 스크러버를 거치지 않으니 값이 아니라 표식만 담을 것. 자세한 계약은
    * {@linkcode LoggerOptions.enrich}에 있다.
+   *
+   * `trace`와 함께 쓰면 둘 다 적용된다. 키가 겹치면 이쪽이 이긴다.
    */
   enrich?: () => Record<string, unknown>
   /** 로거 세부 설정. `sinks`는 이 팩토리가 정하므로 넘길 수 없다. */
@@ -91,6 +113,18 @@ export interface SetupOptions {
  * downloadLogs(await idbSink.read())
  * ```
  */
+/** `trace`와 `enrich`를 하나의 보강 함수로 합친다. 키가 겹치면 `enrich`가 이긴다. */
+function resolveEnrich(opts: SetupOptions): (() => Record<string, unknown>) | undefined {
+  if (!opts.trace) return opts.enrich
+
+  configureTraceForDiagnostics()
+
+  const { enrich } = opts
+  if (!enrich) return spanContext
+
+  return () => ({ ...spanContext(), ...enrich() })
+}
+
 export function setupDiagLogger(opts: SetupOptions = {}): {
   diag: DiagLogger
   idbSink: IdbSink
@@ -105,7 +139,7 @@ export function setupDiagLogger(opts: SetupOptions = {}): {
   const diag = new DiagLogger({
     sinks,
     context: { release: opts.release },
-    enrich: opts.enrich,
+    enrich: resolveEnrich(opts),
     ...opts.logger,
   })
 
