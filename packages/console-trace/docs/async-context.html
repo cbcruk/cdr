@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AsyncContext, 한 스텝씩</title>
+    <style>
+      :root {
+        --ground: #f5f4f9;
+        --panel: #ffffff;
+        --panel-2: #edebf5;
+        --ink: #1b1927;
+        --muted: #6a6782;
+        --line: #e2dfee;
+        --accent: #6b4bd6;
+        --accent-soft: rgba(107, 75, 214, 0.12);
+        --violet: #a855c9;
+        --good: #1f9d57;
+        --good-soft: rgba(31, 157, 87, 0.14);
+        --bad: #d64545;
+        --bad-soft: rgba(214, 69, 69, 0.12);
+        --warn: #b07a12;
+        --warn-soft: rgba(176, 122, 18, 0.14);
+        --shadow: 0 10px 30px rgba(30, 20, 60, 0.1);
+        --mono:
+          ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
+        --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ground: #121121;
+          --panel: #1a1927;
+          --panel-2: #232236;
+          --ink: #e9e7f3;
+          --muted: #9a96b2;
+          --line: #2c2a42;
+          --accent: #9d8bf5;
+          --accent-soft: rgba(157, 139, 245, 0.16);
+          --violet: #c98bdd;
+          --good: #4ec77e;
+          --good-soft: rgba(78, 199, 126, 0.16);
+          --bad: #ff7a7a;
+          --bad-soft: rgba(255, 122, 122, 0.14);
+          --warn: #e0a944;
+          --warn-soft: rgba(224, 169, 68, 0.15);
+          --shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
+        }
+      }
+      :root[data-theme='light'] {
+        --ground: #f5f4f9;
+        --panel: #ffffff;
+        --panel-2: #edebf5;
+        --ink: #1b1927;
+        --muted: #6a6782;
+        --line: #e2dfee;
+        --accent: #6b4bd6;
+        --accent-soft: rgba(107, 75, 214, 0.12);
+        --violet: #a855c9;
+        --good: #1f9d57;
+        --good-soft: rgba(31, 157, 87, 0.14);
+        --bad: #d64545;
+        --bad-soft: rgba(214, 69, 69, 0.12);
+        --warn: #b07a12;
+        --warn-soft: rgba(176, 122, 18, 0.14);
+        --shadow: 0 10px 30px rgba(30, 20, 60, 0.1);
+      }
+      :root[data-theme='dark'] {
+        --ground: #121121;
+        --panel: #1a1927;
+        --panel-2: #232236;
+        --ink: #e9e7f3;
+        --muted: #9a96b2;
+        --line: #2c2a42;
+        --accent: #9d8bf5;
+        --accent-soft: rgba(157, 139, 245, 0.16);
+        --violet: #c98bdd;
+        --good: #4ec77e;
+        --good-soft: rgba(78, 199, 126, 0.16);
+        --bad: #ff7a7a;
+        --bad-soft: rgba(255, 122, 122, 0.14);
+        --warn: #e0a944;
+        --warn-soft: rgba(224, 169, 68, 0.15);
+        --shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+
+      header.head {
+        margin-bottom: 22px;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 8px;
+      }
+      h1 {
+        font-family: var(--mono);
+        font-weight: 600;
+        font-size: clamp(22px, 3.4vw, 32px);
+        letter-spacing: -0.01em;
+        margin: 0 0 8px;
+        text-wrap: balance;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 15px;
+        max-width: 62ch;
+        margin: 0;
+      }
+
+      /* scenario tabs */
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 24px 0 14px;
+      }
+      .tab {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        padding: 9px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        color: var(--muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition:
+          border-color 0.18s,
+          color 0.18s,
+          background 0.18s;
+      }
+      .tab:hover {
+        color: var(--ink);
+      }
+      .tab[aria-selected='true'] {
+        color: var(--ink);
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .tab .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .tab.ok .dot {
+        background: var(--good);
+      }
+      .tab.bad .dot {
+        background: var(--bad);
+      }
+      .tab.fix .dot {
+        background: var(--accent);
+      }
+      .tab .kbd {
+        font-size: 10px;
+        opacity: 0.55;
+      }
+
+      /* toolbar */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 8px 10px;
+        box-shadow: var(--shadow);
+        margin-bottom: 16px;
+      }
+      .btn {
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 7px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--panel-2);
+        color: var(--ink);
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+      .btn:hover:not(:disabled) {
+        border-color: var(--accent);
+      }
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      :root[data-theme='dark'] .btn.primary,
+      .btn.primary {
+        color: #14101f;
+      }
+      @media (prefers-color-scheme: dark) {
+        .btn.primary {
+          color: #14101f;
+        }
+      }
+      .counter {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+      }
+      .progress {
+        display: flex;
+        gap: 4px;
+        margin-left: 8px;
+      }
+      .pip {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--line);
+        transition: background 0.2s;
+      }
+      .pip.done {
+        background: var(--accent);
+      }
+      .pip.cur {
+        background: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      /* stage grid */
+      .stage {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 16px;
+        align-items: start;
+      }
+      @media (max-width: 780px) {
+        .stage {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .card.flash {
+        animation: flash 0.5s ease;
+      }
+      @keyframes flash {
+        0% {
+          border-color: var(--bad);
+        }
+        100% {
+          border-color: var(--line);
+        }
+      }
+      .card-h {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      /* code */
+      pre.code {
+        margin: 0;
+        padding: 6px 0 10px;
+        font-family: var(--mono);
+        font-size: 13px;
+        overflow-x: auto;
+      }
+      .cl {
+        display: flex;
+        padding: 2px 14px;
+        white-space: pre;
+        transition: background 0.18s;
+        border-left: 2px solid transparent;
+      }
+      .cl .ln {
+        width: 22px;
+        color: var(--muted);
+        opacity: 0.55;
+        user-select: none;
+        text-align: right;
+        margin-right: 14px;
+        flex: none;
+      }
+      .cl.active {
+        background: var(--accent-soft);
+        border-left-color: var(--accent);
+      }
+      .cl.active .ln {
+        opacity: 0.9;
+        color: var(--accent);
+      }
+      .tk-key {
+        color: var(--violet);
+      }
+      .tk-fn {
+        color: var(--accent);
+      }
+      .tk-str {
+        color: var(--good);
+      }
+      .tk-com {
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .right {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* current register */
+      .reg {
+        padding: 16px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .reg .name {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .chip {
+        font-family: var(--mono);
+        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 9px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .chip.empty {
+        color: var(--muted);
+      }
+      .chip.filled {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--ink);
+      }
+      .chip.filled .val {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .chip.warn {
+        background: var(--warn-soft);
+        border-color: var(--warn);
+      }
+      .snap {
+        padding: 0 14px 16px;
+      }
+      .snap-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .snap .chip {
+        font-size: 12.5px;
+      }
+      .snap.dim {
+        opacity: 0.4;
+      }
+
+      /* stack */
+      .stack {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 6px;
+        min-height: 44px;
+      }
+      .frame {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        padding: 6px 11px;
+        border-radius: 8px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        color: var(--ink);
+      }
+      .frame.top {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .frame.susp {
+        border-color: var(--warn);
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .frame.evt {
+        border-style: dashed;
+        color: var(--muted);
+      }
+
+      /* logs */
+      .logs {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        min-height: 44px;
+      }
+      .logline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        padding: 5px 4px;
+      }
+      .logline .arrow {
+        color: var(--muted);
+      }
+      .badge {
+        padding: 2px 9px;
+        border-radius: 7px;
+        font-size: 12px;
+      }
+      .badge.ok {
+        background: var(--good-soft);
+        color: var(--good);
+        border: 1px solid var(--good);
+      }
+      .badge.leak {
+        background: var(--bad-soft);
+        color: var(--bad);
+        border: 1px solid var(--bad);
+      }
+      .logline .mark {
+        margin-left: auto;
+        font-weight: 700;
+      }
+      .logline .mark.ok {
+        color: var(--good);
+      }
+      .logline .mark.leak {
+        color: var(--bad);
+      }
+      .logs .empty {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      /* narration */
+      .note {
+        margin-top: 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-size: 14.5px;
+        box-shadow: var(--shadow);
+        min-height: 58px;
+      }
+      .note.danger {
+        border-left-color: var(--bad);
+        background: var(--bad-soft);
+      }
+      .note.good {
+        border-left-color: var(--good);
+      }
+      .note b {
+        color: var(--accent);
+      }
+      .note.danger b {
+        color: var(--bad);
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 20px;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--mono);
+      }
+      .legend .sw {
+        width: 11px;
+        height: 11px;
+        border-radius: 3px;
+      }
+
+      .foot {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 12.5px;
+        font-family: var(--mono);
+      }
+      .foot code {
+        background: var(--panel-2);
+        padding: 1px 6px;
+        border-radius: 5px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="head">
+        <p class="eyebrow">console-trace · async-context</p>
+        <h1>run은 콜 스택엔 완벽하지만, await엔 무력하다</h1>
+        <p class="sub">
+          <code>current</code> 맵을 언제 설치하고 언제 복원하는지 한 스텝씩 밟아보세요. 동기 중첩이
+          왜 항상 정확한지, plain <code>await</code>에서 왜 컨텍스트가 새는지, 그리고
+          <code>Snapshot</code>이 그걸 어떻게 되살리는지 — 세 시나리오로 나란히 봅니다.
+        </p>
+      </header>
+
+      <div class="tabs" role="tablist" aria-label="시나리오">
+        <button class="tab ok" role="tab" data-scn="sync" aria-selected="true">
+          <span class="dot"></span> 동기 중첩 <span class="kbd">항상 정확</span>
+        </button>
+        <button class="tab bad" role="tab" data-scn="broken" aria-selected="false">
+          <span class="dot"></span> await · fallback <span class="kbd">컨텍스트 샘</span>
+        </button>
+        <button class="tab fix" role="tab" data-scn="fixed" aria-selected="false">
+          <span class="dot"></span> await · native/runAsync <span class="kbd">고침</span>
+        </button>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn" id="reset" title="처음으로">⭯ 처음</button>
+        <button class="btn" id="prev" title="이전 (←)">◀ 이전</button>
+        <button class="btn primary" id="next" title="다음 (→)">다음 ▶</button>
+        <button class="btn" id="auto" title="자동 재생">▶ 자동</button>
+        <div class="progress" id="progress" aria-hidden="true"></div>
+        <span class="counter" id="counter">step 0 / 0</span>
+      </div>
+
+      <div class="stage">
+        <div class="card" id="codeCard">
+          <div class="card-h"><span id="codeTitle">CODE</span><span id="modeTag"></span></div>
+          <pre class="code" id="code"></pre>
+        </div>
+
+        <div class="right">
+          <div class="card" id="regCard">
+            <div class="card-h">CURRENT · 컨텍스트 변수</div>
+            <div class="reg">
+              <span class="name">current =</span>
+              <span class="chip empty" id="regChip"><span class="val">{ }</span></span>
+            </div>
+            <div class="snap dim" id="snapWrap">
+              <div class="snap-row">
+                <span>📸 snapshot =</span>
+                <span class="chip empty" id="snapChip"><span class="val">—</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">CALL STACK</div>
+            <div class="stack" id="stack"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">LOG 귀속 · log()가 붙은 span</div>
+            <div class="logs" id="logs"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" id="note"></div>
+
+      <div class="legend">
+        <span><span class="sw" style="background: var(--accent)"></span> current 설치됨</span>
+        <span><span class="sw" style="background: var(--warn)"></span> 일시정지 / 복원</span>
+        <span><span class="sw" style="background: var(--good)"></span> 올바른 귀속</span>
+        <span><span class="sw" style="background: var(--bad)"></span> 컨텍스트 샘</span>
+      </div>
+
+      <p class="foot">
+        fallback 구현: <code>src/async-context/async-context.ts</code> · 재개 복원:
+        <code>src/async-awaiter/async-awaiter.ts</code>
+      </p>
+    </div>
+
+    <script>
+      const SPAN_COLOR = { checkout: 'var(--accent)', payment: 'var(--violet)', root: 'var(--bad)' }
+
+      // ---- token-highlighted code lines ----
+      const CODE = {
+        sync: [
+          [
+            ['tk-fn', 'trace'],
+            ['', "('"],
+            ['tk-str', 'checkout'],
+            ['', "', () => {"],
+          ],
+          [
+            ['', '  '],
+            ['tk-fn', 'log'],
+            ['', "('"],
+            ['tk-str', 'A'],
+            ['', "')"],
+          ],
+          [
+            ['', '  '],
+            ['tk-fn', 'trace'],
+            ['', "('"],
+            ['tk-str', 'payment'],
+            ['', "', () => {"],
+          ],
+          [
+            ['', '    '],
+            ['tk-fn', 'log'],
+            ['', "('"],
+            ['tk-str', 'B'],
+            ['', "')"],
+          ],
+          [['', '  })']],
+          [
+            ['', '  '],
+            ['tk-fn', 'log'],
+            ['', "('"],
+            ['tk-str', 'C'],
+            ['', "')"],
+          ],
+          [['', '})']],
+        ],
+        broken: [
+          [
+            ['tk-fn', 'trace'],
+            ['', "('"],
+            ['tk-str', 'checkout'],
+            ['', "', "],
+            ['tk-key', 'async'],
+            ['', ' () => {'],
+          ],
+          [
+            ['', '  '],
+            ['tk-fn', 'log'],
+            ['', "('"],
+            ['tk-str', 'A'],
+            ['', "')"],
+          ],
+          [
+            ['', '  '],
+            ['tk-key', 'await'],
+            ['', ' fetch()'],
+          ],
+          [
+            ['', '  '],
+            ['tk-fn', 'log'],
+            ['', "('"],
+            ['tk-str', 'B'],
+            ['', "')"],
+          ],
+          [['', '})']],
+        ],
+        fixed: [
+          [
+            ['tk-fn', 'trace'],
+            ['', "('"],
+            ['tk-str', 'checkout'],
+            ['', "', () => "],
+            ['tk-fn', 'runAsync'],
+            ['', '('],
+            ['tk-key', 'function*'],
+            ['', ' () {'],
+          ],
+          [
+            ['', '  '],
+            ['tk-fn', 'log'],
+            ['', "('"],
+            ['tk-str', 'A'],
+            ['', "')"],
+          ],
+          [
+            ['', '  '],
+            ['tk-key', 'yield'],
+            ['', ' fetch()'],
+            ['tk-com', '   // await 가 변환됨'],
+          ],
+          [
+            ['', '  '],
+            ['tk-fn', 'log'],
+            ['', "('"],
+            ['tk-str', 'B'],
+            ['', "')"],
+          ],
+          [['', '}))']],
+        ],
+      }
+
+      const L = (l, t, ok) => ({ l, t, ok })
+
+      const STEPS = {
+        sync: [
+          {
+            lines: [],
+            map: null,
+            stack: ['main()'],
+            logs: [],
+            note: '시작. <b>current = { }</b> — 활성 span 없음.',
+          },
+          {
+            lines: [0],
+            map: 'checkout',
+            stack: ['main()', 'run(checkout)'],
+            logs: [],
+            note: "<b>trace('checkout')</b> → run이 현재값 <b>{ }</b>을 기억해두고 <b>{ span: checkout }</b>을 설치.",
+          },
+          {
+            lines: [1],
+            map: 'checkout',
+            stack: ['main()', 'run(checkout)'],
+            logs: [L('A', 'checkout', true)],
+            note: "<b>log('A')</b> → get() = checkout ✓",
+          },
+          {
+            lines: [2],
+            map: 'payment',
+            stack: ['main()', 'run(checkout)', 'run(payment)'],
+            logs: [L('A', 'checkout', true)],
+            note: "중첩 <b>trace('payment')</b> → run이 <b>{ span: payment }</b>을 위에 설치.",
+          },
+          {
+            lines: [3],
+            map: 'payment',
+            stack: ['main()', 'run(checkout)', 'run(payment)'],
+            logs: [L('A', 'checkout', true), L('B', 'payment', true)],
+            note: "<b>log('B')</b> → get() = payment ✓",
+          },
+          {
+            lines: [4],
+            map: 'checkout',
+            stack: ['main()', 'run(checkout)'],
+            logs: [L('A', 'checkout', true), L('B', 'payment', true)],
+            note: 'payment.run 종료 → <b>finally</b>가 current를 <b>{ span: checkout }</b>으로 복원.',
+          },
+          {
+            lines: [5],
+            map: 'checkout',
+            stack: ['main()', 'run(checkout)'],
+            logs: [L('A', 'checkout', true), L('B', 'payment', true), L('C', 'checkout', true)],
+            note: "<b>log('C')</b> → get() = checkout ✓ (복원됐으니 다시 checkout)",
+          },
+          {
+            lines: [6],
+            map: null,
+            stack: ['main()'],
+            logs: [L('A', 'checkout', true), L('B', 'payment', true), L('C', 'checkout', true)],
+            good: true,
+            note: 'checkout.run 종료 → current <b>{ }</b> 복원. 설치/복원이 콜 스택과 완벽히 겹쳐 <b>세 로그 모두 정확</b> ✓',
+          },
+        ],
+        broken: [
+          {
+            lines: [],
+            map: null,
+            stack: ['main()'],
+            logs: [],
+            note: '시작. <b>current = { }</b>.',
+          },
+          {
+            lines: [0],
+            map: 'checkout',
+            stack: ['main()', 'run(checkout)'],
+            logs: [],
+            note: 'run이 <b>{ span: checkout }</b>을 설치하고 async 함수를 호출.',
+          },
+          {
+            lines: [1],
+            map: 'checkout',
+            stack: ['main()', 'run(checkout)'],
+            logs: [L('A', 'checkout', true)],
+            note: "<b>log('A')</b> → checkout ✓",
+          },
+          {
+            lines: [2],
+            map: 'checkout',
+            stack: ['main()', 'run(checkout)', '⏸ async 함수 정지'],
+            suspend: 2,
+            logs: [L('A', 'checkout', true)],
+            note: '<b>await</b> 도달 → 함수는 여기서 멈추고 <b>Promise를 즉시 반환</b>. 제어가 run()으로 되돌아간다.',
+          },
+          {
+            lines: [],
+            map: null,
+            stack: ['main()'],
+            logs: [L('A', 'checkout', true)],
+            danger: true,
+            warnMap: true,
+            note: "⚠ run의 <b>finally가 지금 실행됨</b> → current를 <b>{ }</b>로 복원. log('B')는 아직 실행조차 안 했는데 컨텍스트가 사라졌다.",
+          },
+          {
+            lines: [],
+            map: null,
+            stack: ['(이벤트 루프 대기)'],
+            evt: 0,
+            logs: [L('A', 'checkout', true)],
+            note: '…마이크로태스크 뒤: fetch 완료, 함수 재개 준비. current는 <b>여전히 { }</b>.',
+          },
+          {
+            lines: [3],
+            map: null,
+            stack: ['(함수 재개됨)'],
+            evt: 0,
+            logs: [L('A', 'checkout', true), L('B', 'root', false)],
+            danger: true,
+            note: "<b>log('B')</b> → get() = { } → <b>root</b> ✗ &nbsp;컨텍스트가 샜다. B가 checkout이 아니라 root에 붙는다.",
+          },
+        ],
+        fixed: [
+          {
+            lines: [],
+            map: null,
+            snap: null,
+            stack: ['main()'],
+            logs: [],
+            note: '시작. <b>current = { }</b>.',
+          },
+          {
+            lines: [0],
+            map: 'checkout',
+            snap: null,
+            stack: ['main()', 'run(checkout)'],
+            logs: [],
+            note: 'run이 <b>{ span: checkout }</b>을 설치.',
+          },
+          {
+            lines: [0],
+            map: 'checkout',
+            snap: 'checkout',
+            stack: ['main()', 'run(checkout)', 'runAsync'],
+            logs: [],
+            note: 'runAsync가 <b>시작 시점의 current를 Snapshot으로 캡처 📸</b> = { span: checkout }.',
+          },
+          {
+            lines: [1],
+            map: 'checkout',
+            snap: 'checkout',
+            stack: ['main()', 'run(checkout)', 'runAsync'],
+            logs: [L('A', 'checkout', true)],
+            note: "<b>log('A')</b> → checkout ✓",
+          },
+          {
+            lines: [2],
+            map: null,
+            snap: 'checkout',
+            stack: ['main()', '⏸ 제너레이터 정지'],
+            suspend: 1,
+            logs: [L('A', 'checkout', true)],
+            warnMap: true,
+            note: '<b>yield</b>(=await) → 제너레이터 정지. run의 finally가 current를 <b>{ }</b>로 복원. <b>하지만 Snapshot은 { checkout }을 그대로 보관 📸</b>.',
+          },
+          {
+            lines: [],
+            map: 'checkout',
+            snap: 'checkout',
+            stack: ['재개: snapshot.run()'],
+            restore: 0,
+            logs: [L('A', 'checkout', true)],
+            note: 'fetch 완료 → 재개 시 <b>snapshot.run()이 사진을 다시 설치 📸→</b> current = { span: checkout }.',
+          },
+          {
+            lines: [3],
+            map: 'checkout',
+            snap: 'checkout',
+            stack: ['(제너레이터 재개됨)'],
+            logs: [L('A', 'checkout', true), L('B', 'checkout', true)],
+            good: true,
+            note: "<b>log('B')</b> → checkout ✓ &nbsp;재개할 때마다 컨텍스트를 재설치하니 정확하다.",
+          },
+        ],
+      }
+
+      let scn = 'sync'
+      let idx = 0
+      let timer = null
+
+      const $ = (id) => document.getElementById(id)
+
+      function renderCode() {
+        const pre = $('code')
+        pre.innerHTML = ''
+        CODE[scn].forEach((line, i) => {
+          const row = document.createElement('div')
+          row.className = 'cl'
+          row.dataset.i = i
+          const ln = document.createElement('span')
+          ln.className = 'ln'
+          ln.textContent = i + 1
+          row.appendChild(ln)
+          line.forEach(([cls, txt]) => {
+            const s = document.createElement('span')
+            if (cls) s.className = cls
+            s.textContent = txt
+            row.appendChild(s)
+          })
+          pre.appendChild(row)
+        })
+        const titles = {
+          sync: 'CODE · 동기 중첩',
+          broken: 'CODE · async + await (fallback)',
+          fixed: 'CODE · transform (yield + runAsync)',
+        }
+        $('codeTitle').textContent = titles[scn]
+        const tags = { sync: '', broken: 'mode: fallback', fixed: 'mode: native ≈ runAsync' }
+        const mt = $('modeTag')
+        mt.textContent = tags[scn]
+        mt.style.color =
+          scn === 'broken' ? 'var(--bad)' : scn === 'fixed' ? 'var(--good)' : 'var(--muted)'
+        mt.style.fontSize = '10.5px'
+        mt.style.letterSpacing = '0.1em'
+      }
+
+      function spanChip(name, warn) {
+        if (!name)
+          return { cls: 'chip empty' + (warn ? ' warn' : ''), html: '<span class="val">{ }</span>' }
+        const color = SPAN_COLOR[name] || 'var(--accent)'
+        return {
+          cls: 'chip filled',
+          html: '{ span: <span class="val" style="color:' + color + '">' + name + '</span> }',
+        }
+      }
+
+      function render() {
+        const steps = STEPS[scn]
+        const s = steps[idx]
+
+        // code highlight
+        document.querySelectorAll('.cl').forEach((el) => {
+          el.classList.toggle('active', s.lines.includes(Number(el.dataset.i)))
+        })
+
+        // current register
+        const rc = spanChip(s.map, s.warnMap)
+        const chip = $('regChip')
+        chip.className = rc.cls
+        chip.innerHTML = rc.html
+
+        // snapshot (only fixed)
+        const snapWrap = $('snapWrap')
+        if (scn === 'fixed') {
+          snapWrap.style.display = 'block'
+          const has = 'snap' in s ? s.snap : null
+          snapWrap.classList.toggle('dim', !has)
+          const sc = spanChip(has, false)
+          const snapChip = $('snapChip')
+          snapChip.className = has ? 'chip filled' : 'chip empty'
+          snapChip.innerHTML = has ? sc.html : '<span class="val">—</span>'
+        } else {
+          snapWrap.style.display = 'none'
+        }
+
+        // stack
+        const stack = $('stack')
+        stack.innerHTML = ''
+        s.stack.forEach((f, i) => {
+          const d = document.createElement('div')
+          let cls = 'frame'
+          if (s.suspend === i) cls += ' susp'
+          else if (s.evt === i || s.restore === i) cls += ' evt'
+          else if (i === s.stack.length - 1) cls += ' top'
+          d.className = cls
+          d.textContent = f
+          stack.appendChild(d)
+        })
+
+        // logs
+        const logs = $('logs')
+        logs.innerHTML = ''
+        if (s.logs.length === 0) {
+          const e = document.createElement('div')
+          e.className = 'empty'
+          e.textContent = '아직 없음'
+          logs.appendChild(e)
+        }
+        s.logs.forEach((lg) => {
+          const row = document.createElement('div')
+          row.className = 'logline'
+          const color = SPAN_COLOR[lg.t] || 'var(--accent)'
+          row.innerHTML =
+            '<span class="tk-fn">log</span>(<span class="tk-str">\'' +
+            lg.l +
+            "'</span>)" +
+            '<span class="arrow">→</span>' +
+            '<span class="badge ' +
+            (lg.ok ? 'ok' : 'leak') +
+            '" style="' +
+            (lg.ok ? '' : '') +
+            '">' +
+            lg.t +
+            '</span>' +
+            '<span class="mark ' +
+            (lg.ok ? 'ok' : 'leak') +
+            '">' +
+            (lg.ok ? '✓' : '✗') +
+            '</span>'
+          logs.appendChild(row)
+        })
+
+        // note
+        const note = $('note')
+        note.className = 'note' + (s.danger ? ' danger' : s.good ? ' good' : '')
+        note.innerHTML = s.note
+
+        // flash on danger transition
+        if (s.danger) {
+          const cc = $('regCard')
+          cc.classList.remove('flash')
+          void cc.offsetWidth
+          cc.classList.add('flash')
+        }
+
+        // toolbar
+        $('counter').textContent = 'step ' + (idx + 1) + ' / ' + steps.length
+        $('prev').disabled = idx === 0
+        $('next').disabled = idx === steps.length - 1
+
+        // progress pips
+        const prog = $('progress')
+        prog.innerHTML = ''
+        steps.forEach((_, i) => {
+          const p = document.createElement('div')
+          p.className = 'pip' + (i < idx ? ' done' : i === idx ? ' cur' : '')
+          prog.appendChild(p)
+        })
+      }
+
+      function go(n) {
+        const steps = STEPS[scn]
+        idx = Math.max(0, Math.min(steps.length - 1, n))
+        render()
+      }
+      function selectScn(name) {
+        scn = name
+        idx = 0
+        stopAuto()
+        document
+          .querySelectorAll('.tab')
+          .forEach((t) => t.setAttribute('aria-selected', String(t.dataset.scn === name)))
+        renderCode()
+        render()
+      }
+      function stopAuto() {
+        if (timer) {
+          clearInterval(timer)
+          timer = null
+          $('auto').textContent = '▶ 자동'
+        }
+      }
+      function toggleAuto() {
+        if (timer) {
+          stopAuto()
+          return
+        }
+        if (idx === STEPS[scn].length - 1) go(0)
+        $('auto').textContent = '⏸ 정지'
+        timer = setInterval(() => {
+          if (idx >= STEPS[scn].length - 1) {
+            stopAuto()
+            return
+          }
+          go(idx + 1)
+        }, 1400)
+      }
+
+      $('next').addEventListener('click', () => {
+        stopAuto()
+        go(idx + 1)
+      })
+      $('prev').addEventListener('click', () => {
+        stopAuto()
+        go(idx - 1)
+      })
+      $('reset').addEventListener('click', () => {
+        stopAuto()
+        go(0)
+      })
+      $('auto').addEventListener('click', toggleAuto)
+      document
+        .querySelectorAll('.tab')
+        .forEach((t) => t.addEventListener('click', () => selectScn(t.dataset.scn)))
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') {
+          stopAuto()
+          go(idx + 1)
+        } else if (e.key === 'ArrowLeft') {
+          stopAuto()
+          go(idx - 1)
+        }
+      })
+
+      renderCode()
+      render()
+    </script>
+  </body>
+</html>
