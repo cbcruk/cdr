@@ -54,6 +54,14 @@ export interface SetupOptions {
   dev?: boolean
   /** IndexedDB sink 세부 설정. `maxRecords`보다 우선한다. */
   idb?: IdbSinkOptions
+  /**
+   * 매 레코드마다 `ctx`에 합칠 필드를 돌려주는 함수.
+   *
+   * 상관 식별자처럼 기록 시점마다 달라지는 값을 붙이는 자리다. 반환값은
+   * 스크러버를 거치지 않으니 값이 아니라 표식만 담을 것. 자세한 계약은
+   * {@linkcode LoggerOptions.enrich}에 있다.
+   */
+  enrich?: () => Record<string, unknown>
   /** 로거 세부 설정. `sinks`는 이 팩토리가 정하므로 넘길 수 없다. */
   logger?: Partial<Omit<LoggerOptions, 'sinks'>>
 }
@@ -97,6 +105,7 @@ export function setupDiagLogger(opts: SetupOptions = {}): {
   const diag = new DiagLogger({
     sinks,
     context: { release: opts.release },
+    enrich: opts.enrich,
     ...opts.logger,
   })
 

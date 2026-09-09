@@ -134,6 +134,44 @@ const { diag } = setupDiagLogger()
 consola.addReporter(consolaReporter(diag)) // 기본 reporter 유지한 채 추가
 ```
 
+## 레코드마다 컨텍스트 붙이기 (`enrich`)
+
+`context`는 로거를 만들 때 한 번 고정된다. 기록 시점마다 달라지는 값은
+`enrich`로 붙인다. 반환한 필드가 그 레코드의 `ctx`에 합쳐진다.
+
+```ts
+const { diag } = setupDiagLogger({
+  enrich: () => ({ route: location.pathname, role: currentRole() }),
+})
+```
+
+가장 쓸모 있는 용도는 **상관 식별자**다. 내보낸 파일을 읽는 쪽에서 가장
+어려운 질문은 "이 레코드들이 같은 사용자 동작에서 나온 건가"인데, 지금 상관
+키는 시각과 URL뿐이다. 앰비언트 컨텍스트를 쓰는 트레이서를 얹으면 호출부를
+고치지 않고 그 질문에 답할 수 있다.
+
+```ts
+import { spanContext, trace } from 'console-trace'
+
+const { diag } = setupDiagLogger({ enrich: spanContext })
+
+trace('checkout.submit', () => {
+  diag.validationBlocked(['email']) // trace_id / span_id / parent_id 가 붙는다
+})
+```
+
+내보낸 NDJSON에서 한 동작에 속한 레코드가 같은 `trace_id`로 묶이고, 하위
+단계는 `parent_id`로 이어진다. 어떤 동작에도 속하지 않은 레코드는 식별자
+없이 남는다. 식별자가 없다는 건 **귀속되지 않았다**는 뜻이지 무관하다는
+뜻이 아니다.
+
+두 가지를 지킬 것.
+
+- **반환값은 스크러버를 거치지 않는다.** `ctx`는 `url`/`release`처럼 안전한
+  메타데이터 자리이고, 식별자가 마스킹되면 쓸모가 없어진다. 값이 아니라
+  표식만 담을 것. 특히 span 이름에 환자 식별자 같은 걸 넣지 말 것.
+- **여기서 던진 예외는 삼켜진다.** 그 레코드만 보강 없이 저장된다.
+
 ## `/log` 라우트 — HAR 추출의 대체
 
 `/log`의 진짜 가치는 뷰어가 아니라 **내보내기**다.
