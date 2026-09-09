@@ -151,7 +151,7 @@ const { diag } = setupDiagLogger({
 고치지 않고 그 질문에 답할 수 있다.
 
 ```ts
-import { spanContext, trace } from 'console-trace'
+import { spanContext, trace } from '@cbcruk/console-trace'
 
 const { diag } = setupDiagLogger({ enrich: spanContext })
 

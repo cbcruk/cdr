@@ -1,7 +1,7 @@
 // cdr does not depend on any tracer: `enrich` takes a plain function. This
 // pins what the pairing actually produces when an app wires console-trace
 // into that hook, which is the case the hook was added for.
-import { configure as configureTrace, resetTrace, spanContext, trace } from 'console-trace'
+import { configure as configureTrace, resetTrace, spanContext, trace } from '@cbcruk/console-trace'
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
 import { DiagLogger } from '../src/logger'
 import type { LogRecord, Sink } from '../src/types'

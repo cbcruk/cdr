@@ -1,4 +1,4 @@
-import { setupTrace, spanContext, trace } from 'console-trace'
+import { setupTrace, spanContext, trace } from '@cbcruk/console-trace'
 import { copyLogs, downloadLogs, filterLogs, setupDiagLogger } from '../src'
 import type { LogLevel, LogRecord } from '../src'
 

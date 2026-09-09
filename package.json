@@ -41,7 +41,7 @@
     "prepublishOnly": "vp pack"
   },
   "devDependencies": {
-    "console-trace": "github:cbcruk/console-trace",
+    "@cbcruk/console-trace": "workspace:*",
     "fake-indexeddb": "^6.0.0",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.2",
