@@ -24,7 +24,7 @@ importers:
     devDependencies:
       console-trace:
         specifier: github:cbcruk/console-trace
-        version: https://codeload.github.com/cbcruk/console-trace/tar.gz/2f8c4850ca71be10c3a2b00d545064d556a8bcc6
+        version: https://codeload.github.com/cbcruk/console-trace/tar.gz/713dd588612ab14aa34e69a313bc27557a2f9e5f
       fake-indexeddb:
         specifier: ^6.0.0
         version: 6.2.5
@@ -530,8 +530,8 @@ packages:
     resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
     engines: {node: ^14.18.0 || >=16.10.0}
 
-  console-trace@https://codeload.github.com/cbcruk/console-trace/tar.gz/2f8c4850ca71be10c3a2b00d545064d556a8bcc6:
-    resolution: {tarball: https://codeload.github.com/cbcruk/console-trace/tar.gz/2f8c4850ca71be10c3a2b00d545064d556a8bcc6}
+  console-trace@https://codeload.github.com/cbcruk/console-trace/tar.gz/713dd588612ab14aa34e69a313bc27557a2f9e5f:
+    resolution: {tarball: https://codeload.github.com/cbcruk/console-trace/tar.gz/713dd588612ab14aa34e69a313bc27557a2f9e5f}
     version: 0.1.0
     peerDependencies:
       '@babel/core': ^8.0.0
@@ -1258,7 +1258,7 @@ snapshots:
 
   consola@3.4.2: {}
 
-  console-trace@https://codeload.github.com/cbcruk/console-trace/tar.gz/2f8c4850ca71be10c3a2b00d545064d556a8bcc6: {}
+  console-trace@https://codeload.github.com/cbcruk/console-trace/tar.gz/713dd588612ab14aa34e69a313bc27557a2f9e5f: {}
 
   cssstyle@4.6.0:
     dependencies:
