@@ -14,6 +14,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['tests/setup.ts'],
+    // e2e는 Playwright가 실제 브라우저에서 돌린다. `vp test`가 주워가면
+    // @playwright/test를 jsdom에서 불러오다 깨진다.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/demo-dist/**', 'e2e/**'],
   },
   fmt: {
     semi: false,

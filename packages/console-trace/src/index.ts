@@ -139,7 +139,6 @@ export type {
 } from './trace-transport/trace-transport.types.ts'
 export { spanContext } from './trace-context/trace-context.ts'
 export type { SpanContext } from './trace-context/trace-context.types.ts'
-export { tracePlugin } from './vite-plugin-trace/vite-plugin-trace.ts'
 export type {
   LogEntry,
   Logger,
@@ -157,9 +156,5 @@ export type {
   Snapshot,
   Variable,
 } from './async-context/async-context.types.ts'
-export type {
-  TracePlugin,
-  TracePluginOptions,
-} from './vite-plugin-trace/vite-plugin-trace.types.ts'
 
 export type { Span as TraceSpan }

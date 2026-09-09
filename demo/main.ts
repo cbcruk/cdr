@@ -238,7 +238,12 @@ function wireViewer(): void {
     })
   })
   $('#clear').addEventListener('click', () => {
-    void idbSink.clear().then(() => refreshViewer())
+    // 쓰기는 배치라 아직 store에 닿지 않은 레코드가 있을 수 있다. 먼저
+    // 내보내고 지워야 비운 직후에 되살아나지 않는다.
+    void diag
+      .flush()
+      .then(() => idbSink.clear())
+      .then(() => refreshViewer())
   })
 }
 
