@@ -34,6 +34,55 @@ test('reports nothing to transform for sync code', async () => {
   expect(result?.transformed).toBe(false)
 })
 
+test('rejects super in an async method rather than emitting unparseable code', async () => {
+  const code = `
+    class Base { async load() { return 1 } }
+    class Child extends Base {
+      async load() { const v = await super.load(); return v + 1 }
+    }`
+
+  await expect(transformAsync(code, 'child.ts')).rejects.toThrow('super in an async function')
+})
+
+test('rejects super reached through an arrow inside an async method', async () => {
+  // The arrow inherits `super` from the method, so it breaks the same way.
+  const code = `
+    class Base { load() { return 1 } }
+    class Child extends Base {
+      async load() { const f = () => super.load(); await 0; return f() }
+    }`
+
+  await expect(transformAsync(code, 'child.ts')).rejects.toThrow('super in an async function')
+})
+
+test('rejects arguments inside an async arrow', async () => {
+  const code = `function outer() { return (async () => { await 0; return arguments[0] })() }`
+
+  await expect(transformAsync(code, 'outer.ts')).rejects.toThrow(
+    'arguments in an async arrow function',
+  )
+})
+
+test('allows arguments in an async function, which forwards its own', async () => {
+  const result = await transformAsync(`async function f() { await 0; return arguments[0] }`, 'f.ts')
+
+  expect(result?.transformed).toBe(true)
+  expect(result?.code).toContain('__runAsync(this, arguments')
+})
+
+test('allows a local variable named arguments in an async arrow', async () => {
+  const code = `const f = async (...args) => { const argumentsList = args; await 0; return argumentsList }`
+  const result = await transformAsync(code, 'f.ts')
+
+  expect(result?.transformed).toBe(true)
+})
+
+test('rejects new.target in an async function', async () => {
+  const code = `async function F() { await 0; return new.target }`
+
+  await expect(transformAsync(code, 'f.ts')).rejects.toThrow('new.target in an async function')
+})
+
 test('rejects for await...of with a clear error', async () => {
   await expect(
     transformAsync('async function f(xs) { for await (const x of xs) {} }', 'f.js'),

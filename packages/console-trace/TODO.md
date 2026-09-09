@@ -15,6 +15,10 @@ here so the next session has context.
   support it or keep it explicitly unsupported.
 - **`for await...of`.** Currently rejected with a clear error. Lowering it to a
   manual iterator + `yield` would lift the restriction.
+- **`super` in an async method.** Currently rejected. TypeScript lifts the same
+  restriction by capturing a `_super` binding outside the generator; the same
+  trick would work here. Rejected first because the old behaviour emitted a
+  module that would not parse.
 
 ## Transport
 
@@ -76,3 +80,9 @@ the two problems when bringing this to Node:
 
 - Run the engine in a real app to confirm whether the `fallback` mode
   concurrency limit actually bites before investing further in the transform.
+  Cheap to do now: the `cdr` demo in this repository is a real app, so enabling
+  `tracePlugin({ transform: true })` there and clicking through would show how
+  many records are written after an `await` and whether losing their
+  attribution actually hurts. Source maps are the expensive item and are worth
+  deferring until that question is answered — deleting the transform is a live
+  outcome.

@@ -98,8 +98,22 @@ tracePlugin({ transform: true })
 ```
 
 The transform uses Babel, declared as an optional peer dependency — install
-`@babel/core` when you enable it. `for await...of` is rejected with a clear
-error rather than miscompiled. In `native` mode the transform is unnecessary.
+`@babel/core` when you enable it. In `native` mode it is unnecessary.
+
+Each `async` body moves into a generator, which rebinds what the enclosing
+function used to provide. These are rejected with a code-frame error naming the
+line, rather than miscompiled:
+
+| Construct                       | Left alone it would                             |
+| ------------------------------- | ----------------------------------------------- |
+| `super` in an `async` method    | emit a module that does not parse               |
+| `new.target`                    | silently read the generator's, always undefined |
+| `arguments` in an `async` arrow | silently read an empty list                     |
+| `for await...of`                | be lowered incorrectly                          |
+
+An `async` function's own `arguments` is fine: it is forwarded through
+`runAsync`. An arrow has none of its own to forward, which is why only that
+case is refused.
 
 > **New to `AsyncContext`?** Step through why synchronous nesting is always
 > exact, why a plain `await` leaks the span in `fallback` mode, and how

@@ -23,8 +23,13 @@ interface BabelApi {
  * `__runAsync(this, arguments, void 0, function* () { ... })`, with its
  * `await` expressions rewritten to `yield`. Nested functions are skipped and
  * handled by their own visit, so each `await` binds to the right body. Async
- * generators are left alone; `for await...of` throws a code-frame error rather
- * than being miscompiled.
+ * generators are left alone.
+ *
+ * Because the body moves inside a new `function*`, anything bound by the
+ * enclosing function is rebound: `super`, `new.target`, and an arrow's
+ * `arguments`. Those, and `for await...of`, are rejected with a code-frame
+ * error rather than miscompiled — `super` would otherwise emit a module that
+ * does not parse, and the rest would read the wrong values in silence.
  *
  * Sets `traceTransformed` on the file metadata when it changed anything, so
  * callers can skip untouched modules.
@@ -41,11 +46,55 @@ export function asyncToRunAsyncPlugin({ types }: BabelApi): PluginObject {
       AwaitExpression(awaitPath) {
         awaitPath.replaceWith(types.yieldExpression(awaitPath.node.argument, false))
       },
+    })
+  }
+
+  /**
+   * Rejects constructs the rewrite cannot carry into the generator body.
+   *
+   * The body moves inside a new `function*`, which rebinds `super`,
+   * `arguments` and `new.target`. Left alone, `super` emits a module that will
+   * not parse and the other two silently read the wrong values, so refuse the
+   * file instead of handing back broken output.
+   *
+   * Arrow functions inherit all three from the enclosing function, so the walk
+   * continues through them and stops at any other function, which rebinds them
+   * on its own.
+   */
+  const assertSupported = (path: NodePath<BabelTypes.Function>, isArrow: boolean): void => {
+    const reject = (at: NodePath, what: string): never => {
+      throw at.buildCodeFrameError(`${what} is not supported by the trace transform`)
+    }
+
+    path.traverse({
+      Function(inner) {
+        if (!inner.isArrowFunctionExpression()) {
+          inner.skip()
+        }
+      },
       ForOfStatement(forPath) {
         if (forPath.node.await) {
-          throw forPath.buildCodeFrameError(
-            'for await...of is not supported by the trace transform',
-          )
+          reject(forPath, 'for await...of')
+        }
+      },
+      Super(superPath) {
+        reject(superPath, 'super in an async function')
+      },
+      MetaProperty(metaPath) {
+        if (metaPath.node.meta.name === 'new' && metaPath.node.property.name === 'target') {
+          reject(metaPath, 'new.target in an async function')
+        }
+      },
+      Identifier(idPath) {
+        // A normal function forwards its own `arguments` through `runAsync`, so
+        // only an arrow, which has none to forward, reads the wrong object. A
+        // local binding of that name is the user's own variable, not the object.
+        if (!isArrow || idPath.node.name !== 'arguments') {
+          return
+        }
+
+        if (idPath.isReferencedIdentifier() && idPath.scope.getBinding('arguments') === undefined) {
+          reject(idPath, 'arguments in an async arrow function')
         }
       },
     })
@@ -62,9 +111,11 @@ export function asyncToRunAsyncPlugin({ types }: BabelApi): PluginObject {
             return
           }
 
+          const isArrow = node.type === 'ArrowFunctionExpression'
+
+          assertSupported(path, isArrow)
           convertAwaits(path)
 
-          const isArrow = node.type === 'ArrowFunctionExpression'
           const argsArg = isArrow ? voidZero() : types.identifier('arguments')
           const blockBody = types.isBlockStatement(node.body)
             ? node.body
