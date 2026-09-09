@@ -72,7 +72,7 @@ the first install is slower than a registry one.
 
 ```ts
 // vite.config.ts
-import { tracePlugin } from 'console-trace/vite-plugin-trace'
+import { tracePlugin } from '@cbcruk/console-trace/vite-plugin-trace'
 export default defineConfig({ plugins: [tracePlugin()] })
 
 // main.tsx

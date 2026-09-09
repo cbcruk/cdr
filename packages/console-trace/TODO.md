@@ -78,11 +78,16 @@ the two problems when bringing this to Node:
 
 ## Validation
 
-- Run the engine in a real app to confirm whether the `fallback` mode
-  concurrency limit actually bites before investing further in the transform.
-  Cheap to do now: the `cdr` demo in this repository is a real app, so enabling
-  `tracePlugin({ transform: true })` there and clicking through would show how
-  many records are written after an `await` and whether losing their
-  attribution actually hurts. Source maps are the expensive item and are worth
-  deferring until that question is answered — deleting the transform is a live
-  outcome.
+**Answered.** The `cdr` demo has an async action and an end-to-end test
+asserting what a real browser does with it: the record written before the
+`await` carries a `trace_id`, the one after it carries none. Chromium has no
+native `AsyncContext`, so this is the default a consumer gets.
+
+So the gap is real and visible, not theoretical. It also bites the shape the
+recorder is built around — a `swallowed` call inside a `catch` around an
+awaited request is exactly a record written after an `await`.
+
+That argues for keeping the transform rather than deleting it. What is still
+unanswered is whether anyone will enable it, since it is opt-in on top of an
+opt-in. Source maps stay the next investment if the answer turns out to be yes,
+and remain premature until someone actually turns it on.

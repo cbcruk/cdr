@@ -94,3 +94,38 @@ describe('DiagLogger enrich', () => {
     expect(Object.keys(sink.records[0]?.ctx ?? {}).sort()).toEqual(['sessionId', 'url'])
   })
 })
+
+describe('DiagLogger flushOn', () => {
+  it('writes an error immediately instead of buffering it', async () => {
+    const sink = new MemorySink()
+    logger = new DiagLogger({ sinks: [sink] })
+
+    logger.log({ type: 'log', level: 'error', message: 'boom' })
+    await Promise.resolve()
+
+    expect(sink.records.map((record) => record.message)).toEqual(['boom'])
+  })
+
+  it('still buffers anything below the threshold', async () => {
+    const sink = new MemorySink()
+    logger = new DiagLogger({ sinks: [sink] })
+
+    logger.log({ type: 'log', level: 'warn', message: 'later' })
+    await Promise.resolve()
+
+    expect(sink.records).toHaveLength(0)
+
+    await logger.flush()
+    expect(sink.records).toHaveLength(1)
+  })
+
+  it('buffers everything when the threshold is disabled', async () => {
+    const sink = new MemorySink()
+    logger = new DiagLogger({ sinks: [sink], flushOn: null })
+
+    logger.log({ type: 'log', level: 'error', message: 'boom' })
+    await Promise.resolve()
+
+    expect(sink.records).toHaveLength(0)
+  })
+})

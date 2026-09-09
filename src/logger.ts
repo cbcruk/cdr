@@ -13,6 +13,16 @@ export interface LoggerOptions {
   maxBufferSize?: number
   /** 이 레벨 미만은 버린다. 기본 `'debug'`. */
   minLevel?: LogLevel
+  /**
+   * 이 레벨 이상은 버퍼에 두지 않고 즉시 flush 한다. 기본 `'error'`.
+   * `null`이면 전부 배치로만 나간다.
+   *
+   * 배치는 메인 스레드 부담을 줄이지만, 탭이 닫히거나 새로고침되면 아직
+   * 나가지 않은 레코드는 사라진다. `pagehide`에서 flush를 걸어 두긴 했는데
+   * IndexedDB 쓰기는 비동기라 페이지가 헐리는 시점에 시작하면 끝나지 않는다.
+   * 그래서 가장 잃으면 안 되는 것부터 버퍼를 건너뛴다.
+   */
+  flushOn?: LogLevel | null
   /** 저장 직전 마스킹 정책. 생략하면 기본 정책이 적용된다. */
   scrub?: ScrubOptions
   /**
@@ -81,6 +91,7 @@ export class DiagLogger {
   private readonly flushIntervalMs: number
   private readonly maxBufferSize: number
   private readonly minLevel: number
+  private readonly flushOn: number | null
   private readonly baseCtx: BaseContext
   private readonly enrich?: () => Record<string, unknown>
   private listenersBound = false
@@ -96,6 +107,7 @@ export class DiagLogger {
     this.flushIntervalMs = opts.flushIntervalMs ?? 2000
     this.maxBufferSize = opts.maxBufferSize ?? 100
     this.minLevel = LEVEL_ORDER[opts.minLevel ?? 'debug']
+    this.flushOn = opts.flushOn === null ? null : LEVEL_ORDER[opts.flushOn ?? 'error']
     this.enrich = opts.enrich
     this.baseCtx = {
       url: typeof location !== 'undefined' ? location.href : '',
@@ -108,8 +120,8 @@ export class DiagLogger {
   /**
    * 진단 이벤트를 기록한다.
    *
-   * 동기 호출이고, 실제 쓰기는 비동기 배치로 미뤄진다. `minLevel` 미만이면
-   * 조용히 버린다. `data`는 이 시점에 마스킹되므로, 나중에 객체를 바꿔도
+   * 동기 호출이고, 실제 쓰기는 비동기 배치로 미뤄진다. 단 `flushOn` 이상은
+   * 곧바로 내보낸다. `minLevel` 미만이면 조용히 버린다. `data`는 이 시점에 마스킹되므로, 나중에 객체를 바꿔도
    * 기록된 값은 변하지 않는다. `enrich`가 있으면 이 시점에 불려서 결과가
    * `ctx`에 합쳐진다.
    *
@@ -130,7 +142,10 @@ export class DiagLogger {
     }
 
     this.buffer.push(record)
-    if (this.buffer.length >= this.maxBufferSize) void this.flush()
+
+    const urgent = this.flushOn !== null && LEVEL_ORDER[level] >= this.flushOn
+
+    if (urgent || this.buffer.length >= this.maxBufferSize) void this.flush()
   }
 
   /**

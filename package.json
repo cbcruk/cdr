@@ -30,24 +30,26 @@
   },
   "scripts": {
     "build": "vp pack",
-    "watch": "vp pack --watch",
+    "check": "vp check",
     "demo": "vp dev",
     "demo:build": "vp build",
     "demo:build:pages": "vp build --base=/cdr/",
-    "check": "vp check",
-    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "vp pack",
     "test": "vp test run",
+    "test:e2e": "playwright test",
     "test:watch": "vp test",
-    "prepublishOnly": "vp pack"
+    "typecheck": "tsc --noEmit",
+    "watch": "vp pack --watch"
   },
   "devDependencies": {
     "@cbcruk/console-trace": "workspace:*",
+    "@playwright/test": "1.63.0",
     "fake-indexeddb": "^6.0.0",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.2",
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-    "vite-plus": "latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.1.24",
+    "vite-plus": "0.1.24",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@0.1.24"
   },
   "peerDependencies": {
     "consola": "^3",
@@ -71,8 +73,8 @@
       "esbuild"
     ],
     "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+      "vite": "npm:@voidzero-dev/vite-plus-core@0.1.24",
+      "vitest": "npm:@voidzero-dev/vite-plus-test@0.1.24"
     },
     "peerDependencyRules": {
       "allowAny": [
