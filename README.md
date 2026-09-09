@@ -145,25 +145,7 @@ const { diag } = setupDiagLogger({
 })
 ```
 
-가장 쓸모 있는 용도는 **상관 식별자**다. 내보낸 파일을 읽는 쪽에서 가장
-어려운 질문은 "이 레코드들이 같은 사용자 동작에서 나온 건가"인데, 지금 상관
-키는 시각과 URL뿐이다. 앰비언트 컨텍스트를 쓰는 트레이서를 얹으면 호출부를
-고치지 않고 그 질문에 답할 수 있다.
-
-```ts
-import { spanContext, trace } from '@cbcruk/console-trace'
-
-const { diag } = setupDiagLogger({ enrich: spanContext })
-
-trace('checkout.submit', () => {
-  diag.validationBlocked(['email']) // trace_id / span_id / parent_id 가 붙는다
-})
-```
-
-내보낸 NDJSON에서 한 동작에 속한 레코드가 같은 `trace_id`로 묶이고, 하위
-단계는 `parent_id`로 이어진다. 어떤 동작에도 속하지 않은 레코드는 식별자
-없이 남는다. 식별자가 없다는 건 **귀속되지 않았다**는 뜻이지 무관하다는
-뜻이 아니다.
+상관 식별자는 따로 붙일 필요 없이 [내장돼 있다](#상관-식별자-trace).
 
 두 가지를 지킬 것.
 
@@ -171,6 +153,53 @@ trace('checkout.submit', () => {
   메타데이터 자리이고, 식별자가 마스킹되면 쓸모가 없어진다. 값이 아니라
   표식만 담을 것. 특히 span 이름에 환자 식별자 같은 걸 넣지 말 것.
 - **여기서 던진 예외는 삼켜진다.** 그 레코드만 보강 없이 저장된다.
+
+## 상관 식별자 (`trace`)
+
+내보낸 파일을 읽을 때 가장 어려운 질문은 "이 레코드들이 같은 사용자 동작에서
+나온 건가"다. 시각과 URL만으로는 답할 수 없다.
+
+`trace: true`를 주고 사용자 동작을 `trace()`로 감싸면 답이 나온다. `diag`
+호출부는 하나도 바뀌지 않는다.
+
+```ts
+import { setupDiagLogger, trace } from 'cdr'
+
+const { diag } = setupDiagLogger({ trace: true })
+
+trace('checkout.submit', () => {
+  diag.validationBlocked(['email'])
+  trace('payment.charge', () => diag.swallowed('gateway', err))
+})
+```
+
+내보낸 NDJSON에서 한 동작에 속한 레코드가 같은 `trace_id`로 묶이고, 하위
+단계는 `parent_id`로 이어진다.
+
+```
+{"type":"validation_blocked",  "ctx":{"trace_id":"t1","span_id":"s1","parent_id":null}}
+{"type":"swallowed_exception", "ctx":{"trace_id":"t1","span_id":"s2","parent_id":"s1"}}
+{"type":"log","message":"app booted","ctx":{}}
+```
+
+동작 없이 기록된 마지막 줄에는 식별자가 없다. 함수마다 컨텍스트를 넘기지
+않고도 이게 되는 건 앰비언트 컨텍스트 덕이다.
+
+### 정확도 경계
+
+**동기 구간은 언제나 정확하다.** `await`를 넘는 귀속은 브라우저에 네이티브
+`AsyncContext`가 있거나 트레이서의 Vite 변환을 켰을 때만 정확하다. 그 밖에는
+타이머, 프라미스 반응, 나중에 도착한 이벤트에서 기록된 레코드에 식별자가
+붙지 않는다.
+
+**식별자가 없다는 건 귀속되지 않았다는 뜻이지 무관하다는 뜻이 아니다.**
+틀린 동작에 묶이는 일은 없다. 사고를 재구성하는 기록에서는 이쪽이 맞는
+실패 방향이다.
+
+기본값이 `false`인 이유가 이것이다. 정확도를 끝까지 올리는 Vite 변환은
+번들에 넣을 수 없어서 앱이 직접 설정해야 하므로, 켜는 선택을 앱에 남긴다.
+개발 중 오버레이까지 보고 싶다면 이 옵션 대신
+[packages/console-trace](packages/console-trace/)의 `setupTrace`를 직접 부를 것.
 
 ## `/log` 라우트 — HAR 추출의 대체
 
