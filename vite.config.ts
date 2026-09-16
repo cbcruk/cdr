@@ -16,7 +16,14 @@ export default defineConfig({
     setupFiles: ['tests/setup.ts'],
     // e2e는 Playwright가 실제 브라우저에서 돌린다. `vp test`가 주워가면
     // @playwright/test를 jsdom에서 불러오다 깨진다.
-    exclude: ['**/node_modules/**', '**/dist/**', '**/demo-dist/**', 'e2e/**'],
+    // log-viewer는 Node 쪽 도구라 자기 설정(node 환경, `cdr` alias)으로 따로 돈다.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/demo-dist/**',
+      'e2e/**',
+      'packages/log-viewer/**',
+    ],
   },
   fmt: {
     semi: false,
