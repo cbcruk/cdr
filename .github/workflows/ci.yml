@@ -33,6 +33,8 @@ jobs:
 
       - run: pnpm -C packages/log-viewer test
 
+      - run: pnpm -C packages/trace-devtools typecheck
+
   e2e:
     runs-on: ubuntu-latest
     steps:

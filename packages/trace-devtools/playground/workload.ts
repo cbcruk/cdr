@@ -1,4 +1,4 @@
-import { logger, trace } from '../../src/index.ts'
+import { logger, trace } from '@cbcruk/console-trace'
 
 // A small async workload with nested + concurrent spans, an await on every
 // step, and an error branch — enough to exercise the devtools tree, timeline,
