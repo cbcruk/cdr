@@ -28,15 +28,6 @@ importers:
       '@cbcruk/console-trace-devtools':
         specifier: workspace:*
         version: link:packages/trace-devtools
-      '@devframes/hub':
-        specifier: 1.0.0
-        version: 1.0.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5))
-      '@devframes/hub-ui':
-        specifier: 1.0.0
-        version: 1.0.0(@devframes/hub@1.0.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5)))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5))
-      '@devframes/vite':
-        specifier: 1.0.0
-        version: 1.0.0(@devframes/hub-ui@1.0.0(@devframes/hub@1.0.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5)))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5)))(@devframes/hub@1.0.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5)))(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.5)(typescript@5.9.3))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5))
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -95,10 +86,6 @@ importers:
       '@cbcruk/console-trace':
         specifier: workspace:^
         version: link:../console-trace
-      devframe:
-        specifier: 1.0.0
-        version: 1.0.0(cac@7.0.0)(srvx@1.0.5)
-    devDependencies:
       '@devframes/hub':
         specifier: 1.0.0
         version: 1.0.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5))
@@ -108,6 +95,10 @@ importers:
       '@devframes/vite':
         specifier: 1.0.0
         version: 1.0.0(@devframes/hub-ui@1.0.0(@devframes/hub@1.0.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5)))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5)))(@devframes/hub@1.0.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5)))(@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.5)(typescript@5.9.3))(devframe@1.0.0(cac@7.0.0)(srvx@1.0.5))
+      devframe:
+        specifier: 1.0.0
+        version: 1.0.0(cac@7.0.0)(srvx@1.0.5)
+    devDependencies:
       '@types/node':
         specifier: ^22.20.3
         version: 22.20.3
