@@ -40,11 +40,11 @@ here so the next session has context.
 ## Devtools
 
 - **Browser-extension devtools panel.** The
-  [devtools-panel example](examples/devtools-panel/) renders a
-  TanStack-Devtools-style UI in-page on the public API. A natural extension is
-  to move it into a real browser devtools panel (a `chrome.devtools`/WebExtension
-  front-end that subscribes to the same span stream), so the trace tree lives in
-  DevTools rather than overlaying the app. Deferred — not committed work.
+  [trace-devtools package](../trace-devtools/) docks the span tree into a
+  Devframe hub, fed by a page script over the in-page channel. A browser
+  devtools front-end (`chrome.devtools`/WebExtension) could reuse that page
+  script and protocol unchanged, so the tree lives in DevTools rather than in
+  an in-page dock. Deferred — not committed work.
 
 ## Node / terminal
 
