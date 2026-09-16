@@ -29,6 +29,10 @@ jobs:
 
       - run: pnpm run test
 
+      - run: pnpm -C packages/log-viewer typecheck
+
+      - run: pnpm -C packages/log-viewer test
+
   e2e:
     runs-on: ubuntu-latest
     steps:

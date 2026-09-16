@@ -1,0 +1,235 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --border: #262b36;
+  --text: #e6e9ef;
+  --muted: #9aa3b2;
+  --info: #5b9dff;
+  --warn: #e0b341;
+  --error: #ef6a6a;
+  --debug: #8a93a3;
+  --trace: #6b7280;
+  color-scheme: dark;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+#app {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.meta,
+.empty,
+.count,
+.time {
+  color: var(--muted);
+}
+
+.meta {
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  z-index: 1;
+}
+
+.chip {
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.chip[aria-pressed='false'] {
+  opacity: 0.4;
+}
+
+.search {
+  flex: 1;
+  min-width: 160px;
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.issues {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--warn);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.session {
+  margin-bottom: 24px;
+}
+
+.session h2 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.trace {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.trace h3 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.span {
+  margin-left: 12px;
+}
+
+.trace > .span {
+  margin-left: 0;
+}
+
+.span summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.span-id,
+.time,
+.data,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.count {
+  font-size: 12px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.record {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-left: 16px;
+  padding: 3px 0;
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+}
+
+.time {
+  font-size: 12px;
+}
+
+.level {
+  min-width: 40px;
+  font-weight: 600;
+}
+
+.type {
+  color: var(--muted);
+}
+
+.message {
+  flex: 1;
+  min-width: 12ch;
+  overflow-wrap: anywhere;
+}
+
+.data {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-x: auto;
+}
+
+.level-trace .level,
+.chip.level-trace {
+  color: var(--trace);
+}
+.level-debug .level,
+.chip.level-debug {
+  color: var(--debug);
+}
+.level-info .level,
+.chip.level-info {
+  color: var(--info);
+}
+.level-warn .level,
+.chip.level-warn {
+  color: var(--warn);
+}
+.level-error .level,
+.chip.level-error {
+  color: var(--error);
+}
+
+.dot.level-trace {
+  background: var(--trace);
+}
+.dot.level-debug {
+  background: var(--debug);
+}
+.dot.level-info {
+  background: var(--info);
+}
+.dot.level-warn {
+  background: var(--warn);
+}
+.dot.level-error {
+  background: var(--error);
+}
