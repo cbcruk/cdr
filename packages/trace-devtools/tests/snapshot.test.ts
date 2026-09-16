@@ -1,4 +1,4 @@
-import { configure, getRoot, log, resetTrace, trace } from '@cbcruk/console-trace'
+import { configure, getRoot, log, resetTrace, spanContext, trace } from '@cbcruk/console-trace'
 import { beforeEach, describe, expect, it } from 'vite-plus/test'
 import { snapshotSpans } from '../src/snapshot/snapshot.ts'
 
@@ -44,6 +44,23 @@ describe('snapshotSpans', () => {
 
     finish()
     await pending
+  })
+
+  it('carries the same ids spanContext stamps onto records', () => {
+    let stamped: Record<string, unknown> = {}
+    trace('outer', () => {
+      trace('inner', () => {
+        stamped = spanContext()
+      })
+    })
+
+    const inner = snapshotSpans(getRoot(), 0)[0]!.children[0]!
+
+    expect(inner.ids).toEqual({
+      trace_id: stamped.trace_id,
+      span_id: stamped.span_id,
+      parent_id: stamped.parent_id,
+    })
   })
 
   it('produces something a MessagePort can carry', () => {
