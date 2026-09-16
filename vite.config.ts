@@ -1,8 +1,24 @@
+import { createTraceDevframe } from '@cbcruk/console-trace-devtools/devframe'
+import { viteDevframeHub } from '@devframes/vite/hub'
 import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
+  plugins: [
+    // 개발 서버에서만 붙는 Devframe hub. 데모의 span 트리를 dock으로 보여 준다.
+    // localhost 전용이라 일회용 코드 인증은 끈다.
+    viteDevframeHub({
+      quiet: true,
+      auth: false,
+      devframes: [createTraceDevframe()],
+    }),
+  ],
   build: {
     outDir: 'demo-dist',
+  },
+  // 루트 아래 packages/*의 index.html까지 훑으면 각자 alias로 푸는 import를 못 찾아
+  // 사전 번들링 전체를 건너뛴다. 데모 진입점만 스캔한다.
+  optimizeDeps: {
+    entries: ['index.html'],
   },
   pack: {
     entry: ['src/index.ts'],

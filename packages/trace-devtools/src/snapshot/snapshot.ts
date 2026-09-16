@@ -1,3 +1,4 @@
+import { getSpanIds } from '@cbcruk/console-trace'
 import type { LogEntry, SourceLocation, Span } from '@cbcruk/console-trace'
 import type { LogSnapshot, SourceSnapshot, SpanSnapshot } from '../protocol/protocol.types.ts'
 import { formatArg } from './snapshot.utils.ts'
@@ -19,6 +20,7 @@ function snapshotLog(entry: LogEntry, timeOrigin: number): LogSnapshot {
 function snapshotSpan(span: Span, timeOrigin: number): SpanSnapshot {
   return {
     id: span.id,
+    ids: getSpanIds(span),
     name: span.name,
     status: span.status,
     start: timeOrigin + span.startTime,

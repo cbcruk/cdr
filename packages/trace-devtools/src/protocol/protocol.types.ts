@@ -1,4 +1,4 @@
-import type { AsyncContextMode, LogLevel, SpanStatus } from '@cbcruk/console-trace'
+import type { AsyncContextMode, LogLevel, SpanIdFields, SpanStatus } from '@cbcruk/console-trace'
 
 /** Where a span or log was recorded, reduced to what the panel displays. */
 export interface SourceSnapshot {
@@ -27,6 +27,11 @@ export interface LogSnapshot {
  */
 export interface SpanSnapshot {
   id: number
+  /**
+   * The correlation ids `spanContext()` stamps onto records written inside
+   * this span, so a record kept elsewhere can be matched back to it.
+   */
+  ids: SpanIdFields
   name: string
   status: SpanStatus
   /** Epoch milliseconds. */

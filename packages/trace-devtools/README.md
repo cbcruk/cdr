@@ -84,6 +84,9 @@ one-time-code auth, since it only listens on localhost.
   the whole tree. A burst of spans costs one publish.
 - Times cross as epoch milliseconds. The panel is another document with its own
   `performance.timeOrigin`, so page-relative times would be wrong there.
+- Each span carries the `trace_id` / `span_id` that `spanContext()` stamps onto
+  records, shown in the detail pane, so a record kept elsewhere (cdr's IndexedDB,
+  for one) can be matched back to the span it came from.
 - The level filter persists in the panel's `localStorage`; selection does not.
 
 ## Development

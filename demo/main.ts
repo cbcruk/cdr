@@ -9,6 +9,17 @@ const { diag, idbSink } = setupDiagLogger({
   trace: true,
 })
 
+if (import.meta.env.DEV) {
+  // 개발 중에만 Devframe dock에 span 트리를 띄운다. `trace: true`는 운영용이라
+  // 트리를 붙들지 않으므로, 나중에 부른 setupTrace가 보관을 다시 켠다.
+  const [{ setupTrace }, { mountTracePageScript }] = await Promise.all([
+    import('@cbcruk/console-trace'),
+    import('@cbcruk/console-trace-devtools'),
+  ])
+  setupTrace({ overlay: false, replayOnRootEnd: false })
+  await mountTracePageScript()
+}
+
 const ALL_LEVELS: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error']
 
 function $<T extends HTMLElement>(selector: string): T {

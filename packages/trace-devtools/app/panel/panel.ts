@@ -114,6 +114,9 @@ export function mountPanel(root: HTMLElement, options: PanelOptions): PanelHandl
     )
     detail.append(title)
     if (path.length > 0) detail.append(el('div', 'muted path', path.join(' › ')))
+    detail.append(
+      el('div', 'muted ids', `trace_id ${span.ids.trace_id} · span_id ${span.ids.span_id}`),
+    )
 
     const frame = timelineWindow(spans, now)
     const track = el('div', 'track')
