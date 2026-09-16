@@ -267,7 +267,7 @@ pnpm demo     # 데모 실행 (http://localhost:5173)
 - **`/log` 뷰어** — IndexedDB에서 read → 레벨/텍스트 필터 → NDJSON 다운로드 ·
   txt 복사 · clear. 민감 데이터 로그가 `‹masked›`/`‹number›`로 저장된 걸 확인할 수 있다.
 
-개발 서버에서는 왼쪽 아래 Devframe dock에 **console-trace** 패널이 붙는다. 버튼마다
-`trace()`로 묶인 span이 실시간으로 쌓여서, 레코드의 `trace_id`가 어떤 동작에서
-나왔는지 옆에서 볼 수 있다. `pnpm demo`는 패널을 먼저 빌드한다. 운영 빌드에는
-들어가지 않는다.
+왼쪽 아래 Devframe dock에는 **console-trace** 패널이 붙는다. 버튼마다 `trace()`로
+묶인 span이 실시간으로 쌓이고, 상세에 레코드와 같은 `trace_id`/`span_id`가 보여서
+`/log` 뷰어의 레코드가 어떤 동작에서 나왔는지 맞춰 볼 수 있다. 개발 서버와 배포된
+데모 모두 같다. `pnpm demo`는 패널을 먼저 빌드한다.

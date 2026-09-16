@@ -1,17 +1,10 @@
-import { createTraceDevframe } from '@cbcruk/console-trace-devtools/devframe'
-import { viteDevframeHub } from '@devframes/vite/hub'
+import { traceDevtoolsHub } from '@cbcruk/console-trace-devtools/vite'
 import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
-  plugins: [
-    // 개발 서버에서만 붙는 Devframe hub. 데모의 span 트리를 dock으로 보여 준다.
-    // localhost 전용이라 일회용 코드 인증은 끈다.
-    viteDevframeHub({
-      quiet: true,
-      auth: false,
-      devframes: [createTraceDevframe()],
-    }),
-  ],
+  // 데모의 span 트리를 Devframe dock으로 보여 준다. Pages(`/cdr/`)에 배포된
+  // 데모에서도 보이도록 빌드에도 굽는다.
+  plugins: [traceDevtoolsHub({ build: true })],
   build: {
     outDir: 'demo-dist',
   },

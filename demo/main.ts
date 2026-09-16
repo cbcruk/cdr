@@ -1,5 +1,7 @@
 import { copyLogs, downloadLogs, filterLogs, setupDiagLogger, trace } from '../src'
 import type { LogLevel, LogRecord } from '../src'
+import { setupTrace } from '@cbcruk/console-trace'
+import { mountTracePageScript } from '@cbcruk/console-trace-devtools'
 
 const { diag, idbSink } = setupDiagLogger({
   release: 'demo',
@@ -9,16 +11,11 @@ const { diag, idbSink } = setupDiagLogger({
   trace: true,
 })
 
-if (import.meta.env.DEV) {
-  // 개발 중에만 Devframe dock에 span 트리를 띄운다. `trace: true`는 운영용이라
-  // 트리를 붙들지 않으므로, 나중에 부른 setupTrace가 보관을 다시 켠다.
-  const [{ setupTrace }, { mountTracePageScript }] = await Promise.all([
-    import('@cbcruk/console-trace'),
-    import('@cbcruk/console-trace-devtools'),
-  ])
-  setupTrace({ overlay: false, replayOnRootEnd: false })
-  await mountTracePageScript()
-}
+// Devframe dock에 span 트리를 띄운다. 배포된 데모에서도 보이도록 조건 없이 켠다.
+// `trace: true`는 운영용이라 트리를 붙들지 않으므로, 나중에 부른 setupTrace가
+// 보관을 다시 켠다. 빌드에선 소스 위치가 압축된 번들을 가리켜 쓸모가 없으니 뺀다.
+setupTrace({ overlay: false, replayOnRootEnd: false, captureSource: import.meta.env.DEV })
+await mountTracePageScript()
 
 const ALL_LEVELS: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error']
 

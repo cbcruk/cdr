@@ -50,13 +50,22 @@ await mountTracePageScript()
 
 ```ts
 // vite.config.ts
-import { createTraceDevframe } from '@cbcruk/console-trace-devtools/devframe'
-import { viteDevframeHub } from '@devframes/vite/hub'
+import { traceDevtoolsHub } from '@cbcruk/console-trace-devtools/vite'
 
 export default defineConfig({
-  plugins: [viteDevframeHub({ devframes: [createTraceDevframe()] })],
+  plugins: [traceDevtoolsHub()],
 })
 ```
+
+`traceDevtoolsHub({ build: true })` also bakes the hub into `vite build`
+output, so a deployed app carries the dock. Use it rather than
+`viteDevframeHub({ build: true })` when the app is served under a sub-path
+such as GitHub Pages' `/repo/`: that plugin bakes the hub at a fixed
+`/__devframes/`, so the embedded script and the dock iframe point outside the
+site. This one builds at `<base>__devframes/`. `base` must be absolute.
+
+To mount the dock into a hub you assemble yourself, pass
+`createTraceDevframe()` from `@cbcruk/console-trace-devtools/devframe`.
 
 Build the panel once before a hub serves it:
 
@@ -64,7 +73,7 @@ Build the panel once before a hub serves it:
 pnpm -C packages/trace-devtools build
 ```
 
-Gate `mountTracePageScript()` to development yourself (for example behind
+Unless the build carries the hub, gate `mountTracePageScript()` to development yourself (for example behind
 `import.meta.env.DEV`). It adds a listener to every trace event and copies the
 tree on each publish, which is not free on a busy page.
 
